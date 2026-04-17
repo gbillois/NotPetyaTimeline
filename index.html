@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NotPetya Timeline — The $10 Billion Cyberattack</title>
+  <style>
+    :root {
+      --bg: #0a0e1a;
+      --surface: #111827;
+      --surface2: #1a2234;
+      --border: #1e2d45;
+      --accent: #e63946;
+      --accent2: #ff6b35;
+      --accent3: #ffd166;
+      --blue: #4895ef;
+      --green: #2ec4b6;
+      --text: #e2e8f0;
+      --text-muted: #8899aa;
+      --line: #1e3a5f;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      background: linear-gradient(135deg, #0a0e1a 0%, #0d1b2a 50%, #0a0e1a 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 80px 24px 60px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 40% at 50% 0%, rgba(230,57,70,0.12) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 30% at 20% 80%, rgba(72,149,239,0.06) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .hero-eyebrow {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 20px;
+    }
+
+    .hero h1 {
+      font-size: clamp(2.2rem, 5vw, 4rem);
+      font-weight: 800;
+      letter-spacing: -1px;
+      line-height: 1.1;
+      margin-bottom: 20px;
+      background: linear-gradient(135deg, #ffffff 30%, #e63946 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-subtitle {
+      font-size: 1.15rem;
+      color: var(--text-muted);
+      max-width: 620px;
+      margin: 0 auto 40px;
+    }
+
+    .hero-stats {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 32px;
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* ── Layout ── */
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ── Phase headers ── */
+    .phase {
+      padding: 60px 0 0;
+    }
+
+    .phase-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 8px;
+    }
+
+    .phase-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .phase-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+
+    .phase-name {
+      font-size: 1.6rem;
+      font-weight: 700;
+      padding-left: 24px;
+      margin-bottom: 32px;
+      color: var(--text);
+    }
+
+    /* ── Timeline ── */
+    .timeline {
+      position: relative;
+      padding-left: 32px;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 7px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: linear-gradient(to bottom, var(--line), var(--border));
+    }
+
+    .event {
+      position: relative;
+      margin-bottom: 28px;
+    }
+
+    .event::before {
+      content: '';
+      position: absolute;
+      left: -29px;
+      top: 6px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 2px solid var(--bg);
+      background: var(--text-muted);
+      transition: background 0.2s;
+    }
+
+    .event:hover::before {
+      background: var(--accent);
+    }
+
+    .event.critical::before { background: var(--accent); box-shadow: 0 0 8px rgba(230,57,70,0.6); }
+    .event.warning::before  { background: var(--accent2); box-shadow: 0 0 8px rgba(255,107,53,0.5); }
+    .event.info::before     { background: var(--blue); }
+    .event.success::before  { background: var(--green); }
+    .event.notable::before  { background: var(--accent3); }
+
+    .event-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 20px;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+
+    .event-card:hover {
+      border-color: #2a3f5f;
+      transform: translateX(3px);
+    }
+
+    .event-card.critical { border-left: 3px solid var(--accent); }
+    .event-card.warning  { border-left: 3px solid var(--accent2); }
+    .event-card.info     { border-left: 3px solid var(--blue); }
+    .event-card.success  { border-left: 3px solid var(--green); }
+    .event-card.notable  { border-left: 3px solid var(--accent3); }
+
+    .event-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+      flex-wrap: wrap;
+    }
+
+    .event-date {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .event-tag {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 3px;
+    }
+
+    .tag-initial  { background: rgba(230,57,70,0.15);  color: var(--accent); }
+    .tag-spread   { background: rgba(255,107,53,0.15); color: var(--accent2); }
+    .tag-impact   { background: rgba(72,149,239,0.15); color: var(--blue); }
+    .tag-response { background: rgba(46,196,182,0.15); color: var(--green); }
+    .tag-legal    { background: rgba(255,209,102,0.15);color: var(--accent3); }
+    .tag-prelude  { background: rgba(150,100,220,0.15);color: #b48fdb; }
+
+    .event-title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+
+    .event-body {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      line-height: 1.65;
+    }
+
+    .event-body strong {
+      color: var(--text);
+    }
+
+    /* ── Impact grid ── */
+    .impact-section {
+      padding: 64px 0;
+    }
+
+    .section-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    .section-title {
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin-bottom: 32px;
+    }
+
+    .impact-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+    }
+
+    .impact-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+    }
+
+    .impact-card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .impact-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .impact-org {
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    .impact-loss {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+
+    .impact-detail {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    /* ── Technique box ── */
+    .technique-section {
+      padding: 0 0 64px;
+    }
+
+    .technique-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+    }
+
+    .technique-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .technique-name {
+      font-size: 0.82rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: var(--blue);
+    }
+
+    .technique-desc {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 40px 24px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.82rem;
+    }
+
+    footer a { color: var(--blue); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 600px) {
+      .hero { padding: 56px 20px 48px; }
+      .timeline { padding-left: 24px; }
+      .hero-stats { gap: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════ HERO ═══════════════════════════════════════ -->
+<header class="hero">
+  <p class="hero-eyebrow">June 27, 2017</p>
+  <h1>The NotPetya Attack</h1>
+  <p class="hero-subtitle">
+    A Russian cyberweapon disguised as ransomware swept across Ukraine and the globe,
+    causing an estimated <strong style="color:#e63946">$10 billion</strong> in damages — the most destructive
+    cyberattack in history.
+  </p>
+  <div class="hero-stats">
+    <div class="stat">
+      <div class="stat-value">$10B+</div>
+      <div class="stat-label">Estimated Damage</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">65+</div>
+      <div class="stat-label">Countries Affected</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">80+</div>
+      <div class="stat-label">Major Companies Hit</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">6</div>
+      <div class="stat-label">GRU Officers Indicted</div>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+
+  <!-- ═══════════════ PHASE 1: PRELUDE ═══════════════ -->
+  <section class="phase">
+    <div class="phase-header">
+      <div class="phase-dot" style="background:#b48fdb"></div>
+      <span class="phase-title" style="color:#b48fdb">Phase 1</span>
+    </div>
+    <h2 class="phase-name">Prelude &amp; Staging (2016 – June 2017)</h2>
+
+    <div class="timeline">
+
+      <div class="event">
+        <div class="event-card">
+          <div class="event-meta">
+            <span class="event-date">2016</span>
+            <span class="event-tag tag-prelude">Prelude</span>
+          </div>
+          <div class="event-title">Sandworm Plants Backdoor in MEDoc</div>
+          <div class="event-body">
+            Russia's GRU hacking unit <strong>Sandworm (Unit 74455)</strong> compromises the
+            update infrastructure of <strong>M.E.Doc (Medoc)</strong>, Ukraine's dominant
+            accounting software used by ~80% of Ukrainian businesses for tax filing.
+            The backdoor enables covert data exfiltration and future code execution.
+          </div>
+        </div>
+      </div>
+
+      <div class="event">
+        <div class="event-card">
+          <div class="event-meta">
+            <span class="event-date">Apr 14, 2017</span>
+            <span class="event-tag tag-prelude">Prelude</span>
+          </div>
+          <div class="event-title">Shadow Brokers Leak NSA Exploits</div>
+          <div class="event-body">
+            The Shadow Brokers publish a cache of stolen NSA cyberweapons including
+            <strong>EternalBlue</strong> — a critical exploit targeting the SMBv1 protocol
+            (CVE-2017-0144) affecting unpatched Windows machines. Microsoft had issued
+            patch MS17-010 in March 2017, but millions of systems remain vulnerable.
+          </div>
+        </div>
+      </div>
+
+      <div class="event warning">
+        <div class="event-card warning">
+          <div class="event-meta">
+            <span class="event-date">May 12, 2017</span>
+            <span class="event-tag tag-spread">Predecessor</span>
+          </div>
+          <div class="event-title">WannaCry Ransomware Strikes Globally</div>
+          <div class="event-body">
+            WannaCry — also leveraging EternalBlue — infects over <strong>200,000 systems</strong>
+            across 150 countries in a single day, including the UK's NHS. Attributed to
+            North Korea's Lazarus Group. WannaCry serves as an inadvertent proof-of-concept
+            for EternalBlue's destructive potential just six weeks before NotPetya.
+          </div>
+        </div>
+      </div>
+
+      <div class="event">
+        <div class="event-card">
+          <div class="event-meta">
+            <span class="event-date">Jun 22, 2017</span>
+            <span class="event-tag tag-prelude">Staging</span>
+          </div>
+          <div class="event-title">Malicious MEDoc Update Prepared</div>
+          <div class="event-body">
+            Sandworm inserts NotPetya malware into a legitimate MEDoc software update
+            (version 10.01.189). The trojanized update is signed and staged on MEDoc's
+            official servers, scheduled for distribution to approximately <strong>1 million
+            computers</strong> across Ukrainian businesses and government entities.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════ PHASE 2: OUTBREAK ═══════════════ -->
+  <section class="phase">
+    <div class="phase-header">
+      <div class="phase-dot" style="background:var(--accent)"></div>
+      <span class="phase-title" style="color:var(--accent)">Phase 2</span>
+    </div>
+    <h2 class="phase-name">Zero Hour — June 27, 2017</h2>
+
+    <div class="timeline">
+
+      <div class="event critical">
+        <div class="event-card critical">
+          <div class="event-meta">
+            <span class="event-date">Jun 27 · ~10:30 AM Kyiv</span>
+            <span class="event-tag tag-initial">Outbreak</span>
+          </div>
+          <div class="event-title">NotPetya Detonates via MEDoc Update</div>
+          <div class="event-body">
+            The trojanized MEDoc update triggers the NotPetya payload. Within minutes,
+            computers begin displaying a fake <em>"Check Disk"</em> screen while the malware
+            overwrites the <strong>Master Boot Record (MBR)</strong> and encrypts the Master
+            File Table (MFT), rendering machines permanently unbootable. There is no real
+            decryption key — this is a <strong>wiper</strong>, not ransomware.
+          </div>
+        </div>
+      </div>
+
+      <div class="event critical">
+        <div class="event-card critical">
+          <div class="event-meta">
+            <span class="event-date">Jun 27 · 10:30–11:00 AM</span>
+            <span class="event-tag tag-spread">Spread</span>
+          </div>
+          <div class="event-title">Ukraine's Infrastructure Begins Falling</div>
+          <div class="event-body">
+            Simultaneous outages hit Ukrainian institutions within the first 30 minutes:
+            <strong>Chernobyl Nuclear Power Plant</strong> radiation monitoring goes offline;
+            <strong>Ukrainian National Bank</strong>, <strong>Ukrenergo</strong> (power grid),
+            <strong>Ukrtelecom</strong>, Kyiv Boryspil International Airport, and multiple
+            Ukrainian government ministries lose systems.
+          </div>
+        </div>
+      </div>
+
+      <div class="event warning">
+        <div class="event-card warning">
+          <div class="event-meta">
+            <span class="event-date">Jun 27 · ~11:00 AM onward</span>
+            <span class="event-tag tag-spread">Lateral Movement</span>
+          </div>
+          <div class="event-title">EternalBlue + Mimikatz Propagate Globally</div>
+          <div class="event-body">
+            NotPetya uses a dual-propagation strategy far more sophisticated than WannaCry:
+            <strong>EternalBlue</strong> exploits unpatched SMBv1 to hop between machines on
+            the network, while a modified <strong>Mimikatz</strong> credential harvester
+            extracts Windows login credentials from memory to spread as a legitimate user
+            even on fully-patched machines. A single infected laptop inside a corporate
+            network can compromise the entire domain.
+          </div>
+        </div>
+      </div>
+
+      <div class="event warning">
+        <div class="event-card warning">
+          <div class="event-meta">
+            <span class="event-date">Jun 27 · Afternoon</span>
+            <span class="event-tag tag-spread">Global Spread</span>
+          </div>
+          <div class="event-title">Maersk IT Infrastructure Annihilated</div>
+          <div class="event-body">
+            A.P. Møller-Maersk, the world's largest container shipping company, loses
+            virtually its entire global IT infrastructure. <strong>45,000 PCs</strong>,
+            <strong>4,000 servers</strong>, and <strong>2,500 applications</strong> are wiped.
+            The company handles roughly 20% of global seaborne trade — port operations
+            freeze at <strong>76 ports</strong> worldwide. CEO Søren Skou calls it
+            "an unprecedented attack."
+          </div>
+        </div>
+      </div>
+
+      <div class="event warning">
+        <div class="event-card warning">
+          <div class="event-meta">
+            <span class="event-date">Jun 27 · Afternoon</span>
+            <span class="event-tag tag-spread">Global Spread</span>
+          </div>
+          <div class="event-title">Merck, TNT, Mondelez, and Others Fall</div>
+          <div class="event-body">
+            <strong>Merck</strong> (pharmaceutical) loses ~30,000 computers, halting
+            manufacturing including flu vaccine production. <strong>TNT Express</strong> (FedEx
+            subsidiary) suffers months of disruption. <strong>Mondelez International</strong>
+            loses 1,700 servers and 24,000 laptops. <strong>Reckitt Benckiser</strong>,
+            <strong>Saint-Gobain</strong>, <strong>Rosneft</strong>, and <strong>Heritage Valley
+            Health System</strong> (Pittsburgh hospitals) are also struck.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════ PHASE 3: RESPONSE ═══════════════ -->
+  <section class="phase">
+    <div class="phase-header">
+      <div class="phase-dot" style="background:var(--blue)"></div>
+      <span class="phase-title" style="color:var(--blue)">Phase 3</span>
+    </div>
+    <h2 class="phase-name">Emergency Response (June 27 – July 2017)</h2>
+
+    <div class="timeline">
+
+      <div class="event info">
+        <div class="event-card info">
+          <div class="event-meta">
+            <span class="event-date">Jun 27 · Evening</span>
+            <span class="event-tag tag-response">Response</span>
+          </div>
+          <div class="event-title">CERT-UA and Global IR Teams Mobilize</div>
+          <div class="event-body">
+            Ukraine's Computer Emergency Response Team issues an advisory.
+            Security firms including <strong>ESET, Cisco Talos, CrowdStrike</strong>, and
+            <strong>Kaspersky</strong> begin real-time analysis. Emergency network segmentation
+            and system shutdowns are ordered at affected organizations globally.
+            A "kill switch" domain (perfc.dat) is identified — machines that find
+            this file on the local disk will abort, offering partial containment.
+          </div>
+        </div>
+      </div>
+
+      <div class="event info">
+        <div class="event-card info">
+          <div class="event-meta">
+            <span class="event-date">Jun 27–28</span>
+            <span class="event-tag tag-response">Response</span>
+          </div>
+          <div class="event-title">Maersk Begins Manual Cargo Operations</div>
+          <div class="event-body">
+            Maersk staff revert to <strong>pen and paper</strong> to track container
+            movements. The company flies a team to Ghana — the sole Maersk office whose
+            domain controller survived (due to a power outage during the attack) — to
+            recover Active Directory and begin reinstalling their global IT infrastructure
+            from scratch over the next <strong>10 days</strong>.
+          </div>
+        </div>
+      </div>
+
+      <div class="event info">
+        <div class="event-card info">
+          <div class="event-meta">
+            <span class="event-date">Late Jun – Jul 2017</span>
+            <span class="event-tag tag-response">Recovery</span>
+          </div>
+          <div class="event-title">Weeks-Long Recovery Efforts</div>
+          <div class="event-body">
+            Organizations face recovery timelines measured in weeks, not days.
+            Merck is forced to borrow flu vaccine stock from the U.S. government's
+            strategic national stockpile. TNT Express customer operations remain degraded
+            for months. The NHS in the UK advises partners on containment. Heritage Valley
+            Health postpones non-urgent medical procedures.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════ PHASE 4: INVESTIGATION ═══════════════ -->
+  <section class="phase">
+    <div class="phase-header">
+      <div class="phase-dot" style="background:var(--accent3)"></div>
+      <span class="phase-title" style="color:var(--accent3)">Phase 4</span>
+    </div>
+    <h2 class="phase-name">Investigation &amp; Attribution (2017–2018)</h2>
+
+    <div class="timeline">
+
+      <div class="event notable">
+        <div class="event-card notable">
+          <div class="event-meta">
+            <span class="event-date">Jul – Oct 2017</span>
+            <span class="event-tag tag-impact">Analysis</span>
+          </div>
+          <div class="event-title">Security Researchers Confirm "NotPetya Is a Wiper"</div>
+          <div class="event-body">
+            ESET, Cisco Talos, and Comae Technologies independently confirm that despite
+            displaying a $300 ransom demand, NotPetya has <strong>no decryption capability</strong>.
+            The installation ID shown on the ransom screen is randomly generated — paying
+            is futile. Researchers also trace the MEDoc supply-chain vector and identify
+            <strong>three separate propagation methods</strong>: MEDoc update, EternalBlue, and
+            WMIC/PSEXEC with harvested credentials.
+          </div>
+        </div>
+      </div>
+
+      <div class="event notable">
+        <div class="event-card notable">
+          <div class="event-meta">
+            <span class="event-date">Jan 2018</span>
+            <span class="event-tag tag-legal">Attribution</span>
+          </div>
+          <div class="event-title">CIA Attributes NotPetya to GRU Sandworm</div>
+          <div class="event-body">
+            The U.S. Central Intelligence Agency concludes with <strong>high confidence</strong>
+            that the Russian military intelligence agency <strong>GRU's Sandworm unit</strong>
+            (also known as APT28 subgroup / Voodoo Bear) is responsible for NotPetya.
+            Investigators tie the attack to Russia's ongoing hybrid war against Ukraine.
+          </div>
+        </div>
+      </div>
+
+      <div class="event notable">
+        <div class="event-card notable">
+          <div class="event-meta">
+            <span class="event-date">Feb 15, 2018</span>
+            <span class="event-tag tag-legal">Attribution</span>
+          </div>
+          <div class="event-title">Five Nations Formally Attribute Attack to Russia</div>
+          <div class="event-body">
+            The <strong>United States, United Kingdom, Australia, Canada</strong>, and
+            <strong>Denmark</strong> simultaneously issue official statements attributing
+            NotPetya to the Russian military. The White House calls it
+            <em>"the most destructive and costly cyber-attack in history."</em>
+            Russia denies all involvement.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════ PHASE 5: LEGAL AFTERMATH ═══════════════ -->
+  <section class="phase">
+    <div class="phase-header">
+      <div class="phase-dot" style="background:var(--green)"></div>
+      <span class="phase-title" style="color:var(--green)">Phase 5</span>
+    </div>
+    <h2 class="phase-name">Legal Aftermath (2019–2022)</h2>
+
+    <div class="timeline">
+
+      <div class="event success">
+        <div class="event-card success">
+          <div class="event-meta">
+            <span class="event-date">2019</span>
+            <span class="event-tag tag-legal">Insurance</span>
+          </div>
+          <div class="event-title">Mondelez vs. Zurich — The "Act of War" Dispute</div>
+          <div class="event-body">
+            Mondelez International files suit against insurer <strong>Zurich American</strong>
+            after Zurich denies a $100M+ cyber-insurance claim, citing a war exclusion clause —
+            arguing that NotPetya was an "act of war" by a sovereign nation. The landmark case
+            raises industry-wide questions about whether cyberattacks sponsored by states are
+            insurable events. The case is settled out of court in 2022.
+          </div>
+        </div>
+      </div>
+
+      <div class="event success">
+        <div class="event-card success">
+          <div class="event-meta">
+            <span class="event-date">Oct 19, 2020</span>
+            <span class="event-tag tag-legal">Indictment</span>
+          </div>
+          <div class="event-title">DOJ Indicts 6 GRU Officers for NotPetya</div>
+          <div class="event-body">
+            The U.S. Department of Justice unseals an indictment charging
+            <strong>six GRU officers</strong> (Unit 74455 / Sandworm) with crimes related
+            to NotPetya, the 2018 Olympic Destroyer attack, the French election interference,
+            and attacks on Ukrainian critical infrastructure. Officers named include
+            Yuriy Andrienko, Sergei Detistov, Pavel Frolov, Anatoliy Kovalev, Artem Ochichenko,
+            and Petr Pliskin. None are in U.S. custody.
+          </div>
+        </div>
+      </div>
+
+      <div class="event success">
+        <div class="event-card success">
+          <div class="event-meta">
+            <span class="event-date">Ongoing</span>
+            <span class="event-tag tag-legal">Lessons</span>
+          </div>
+          <div class="event-title">Supply-Chain Security Becomes a Board-Level Issue</div>
+          <div class="event-body">
+            NotPetya fundamentally reshapes enterprise cybersecurity strategy. Organizations
+            accelerate network segmentation, zero-trust architecture adoption, offline backup
+            requirements, and software supply-chain auditing. CISA and NIST reference NotPetya
+            as a case study in critical infrastructure protection. The attack remains the
+            clearest modern example of a cyberweapon causing <strong>kinetic-scale economic damage</strong>.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════ IMPACT GRID ═══════════════ -->
+  <section class="impact-section">
+    <p class="section-label">Financial Impact</p>
+    <h2 class="section-title">Organizations Hit Hardest</h2>
+    <div class="impact-grid">
+
+      <div class="impact-card">
+        <div class="impact-card-header">
+          <div class="impact-icon" style="background:rgba(230,57,70,0.1)">🚢</div>
+          <div class="impact-org">A.P. Møller-Maersk</div>
+        </div>
+        <div class="impact-loss">~$300M</div>
+        <div class="impact-detail">45,000 PCs and 4,000 servers wiped. 76 ports disrupted worldwide. Complete IT rebuild over 10 days.</div>
+      </div>
+
+      <div class="impact-card">
+        <div class="impact-card-header">
+          <div class="impact-icon" style="background:rgba(72,149,239,0.1)">💊</div>
+          <div class="impact-org">Merck &amp; Co.</div>
+        </div>
+        <div class="impact-loss">~$870M</div>
+        <div class="impact-detail">30,000 computers destroyed. Manufacturing halted. Required U.S. strategic stockpile vaccines.</div>
+      </div>
+
+      <div class="impact-card">
+        <div class="impact-card-header">
+          <div class="impact-icon" style="background:rgba(255,107,53,0.1)">📦</div>
+          <div class="impact-org">FedEx / TNT Express</div>
+        </div>
+        <div class="impact-loss">~$400M</div>
+        <div class="impact-detail">Months of degraded operations. Customer deliveries delayed globally. Legacy IT integration issues.</div>
+      </div>
+
+      <div class="impact-card">
+        <div class="impact-card-header">
+          <div class="impact-icon" style="background:rgba(255,209,102,0.1)">🍪</div>
+          <div class="impact-org">Mondelez International</div>
+        </div>
+        <div class="impact-loss">~$188M</div>
+        <div class="impact-detail">1,700 servers and 24,000 laptops destroyed. Led to landmark insurance dispute with Zurich.</div>
+      </div>
+
+      <div class="impact-card">
+        <div class="impact-card-header">
+          <div class="impact-icon" style="background:rgba(46,196,182,0.1)">🏗️</div>
+          <div class="impact-org">Saint-Gobain</div>
+        </div>
+        <div class="impact-loss">~$384M</div>
+        <div class="impact-detail">French multinational construction materials company. Systems wiped across global operations.</div>
+      </div>
+
+      <div class="impact-card">
+        <div class="impact-card-header">
+          <div class="impact-icon" style="background:rgba(150,100,220,0.1)">🧴</div>
+          <div class="impact-org">Reckitt Benckiser</div>
+        </div>
+        <div class="impact-loss">~$129M</div>
+        <div class="impact-detail">Production and distribution of consumer goods including Lysol and Durex disrupted globally.</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════ TECHNIQUES ═══════════════ -->
+  <section class="technique-section">
+    <p class="section-label">Attack Anatomy</p>
+    <h2 class="section-title">Key Techniques</h2>
+    <div class="technique-grid">
+
+      <div class="technique-card">
+        <div class="technique-name">Supply-Chain Compromise</div>
+        <div class="technique-desc">MEDoc update server backdoored to distribute malware to ~1M systems as a trusted software update.</div>
+      </div>
+
+      <div class="technique-card">
+        <div class="technique-name">EternalBlue (CVE-2017-0144)</div>
+        <div class="technique-desc">NSA-developed SMBv1 exploit propagates NotPetya laterally across unpatched Windows networks.</div>
+      </div>
+
+      <div class="technique-card">
+        <div class="technique-name">Mimikatz Credential Harvesting</div>
+        <div class="technique-desc">Extracts plaintext credentials from Windows LSASS memory, enabling spread even on patched machines.</div>
+      </div>
+
+      <div class="technique-card">
+        <div class="technique-name">WMIC / PsExec Lateral Movement</div>
+        <div class="technique-desc">Uses harvested admin credentials with Windows management tools to execute payload remotely.</div>
+      </div>
+
+      <div class="technique-card">
+        <div class="technique-name">MBR / MFT Overwrite</div>
+        <div class="technique-desc">Overwrites Master Boot Record and encrypts Master File Table, permanently destroying boot capability.</div>
+      </div>
+
+      <div class="technique-card">
+        <div class="technique-name">Fake Ransomware Cover</div>
+        <div class="technique-desc">Displays a Bitcoin ransom demand to disguise the true wiper nature and delay incident response.</div>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <p>Sources: WIRED, ESET, Cisco Talos, U.S. DOJ indictment (Oct 2020), White House press release (Feb 2018),
+  <a href="https://www.wired.com/story/notpetya-cyberattack-ukraine-russia-code-crashed-the-world/" target="_blank" rel="noopener">WIRED — "The Untold Story of NotPetya"</a></p>
+  <p style="margin-top:8px;color:#4a5568">Published via GitHub Pages</p>
+</footer>
+
+</body>
+</html>
