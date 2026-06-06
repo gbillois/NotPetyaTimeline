@@ -327,6 +327,34 @@
     }
     .note code { font-family: var(--mono-font); color: var(--primary); font-size: 0.67rem; font-weight: 600; }
     input[type="file"] { display: none; }
+    /* ── Content editor (phases & events) ── */
+    .ce-sub { font-size: 0.67rem; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--muted); margin: 4px 0 9px; }
+    .ce-sub:not(:first-child) { margin-top: 18px; }
+    .ce-actions { display: flex; gap: 8px; margin-top: 4px; }
+    .ce-actions .act { margin-bottom: 0; }
+    .ce-card { border: 1px solid var(--border); border-radius: 10px; background: #fff; margin-bottom: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(11,47,74,0.05); }
+    .ce-head { display: flex; align-items: center; gap: 8px; padding: 9px 10px; cursor: pointer; background: var(--surface-alt); user-select: none; }
+    .ce-head:hover { background: #dcefeb; }
+    .ce-caret { font-size: 0.62rem; color: var(--muted); transition: transform 0.15s ease; flex-shrink: 0; width: 10px; }
+    .ce-card.open .ce-caret { transform: rotate(90deg); }
+    .ce-chip { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 0 3px rgba(15,109,143,0.08); }
+    .ce-htitle { flex: 1; min-width: 0; font-size: 0.76rem; font-weight: 600; color: var(--primary-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ce-htime { font-family: var(--mono-font); font-size: 0.58rem; color: var(--muted); flex-shrink: 0; }
+    .ce-mini { width: 25px; height: 25px; padding: 0; display: grid; place-items: center; border: 1px solid var(--border); background: #fff; border-radius: 7px; font-size: 0.78rem; line-height: 1; color: var(--primary-strong); flex-shrink: 0; transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease; }
+    .ce-mini:hover { background: #dcefeb; }
+    .ce-mini:disabled { opacity: 0.3; cursor: default; background: #fff; }
+    .ce-mini.danger:hover { background: #fdecef; color: var(--danger); border-color: rgba(217,72,95,0.45); }
+    .ce-body { display: none; padding: 12px 11px 13px; border-top: 1px solid var(--border); }
+    .ce-card.open .ce-body { display: block; }
+    .ce-field { margin-bottom: 10px; }
+    .ce-field:last-child { margin-bottom: 0; }
+    .ce-field > label { display: block; font-size: 0.65rem; font-weight: 600; color: var(--muted); margin-bottom: 4px; letter-spacing: 0.02em; }
+    .ce-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .ce-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .ce-field input[type="number"] { width: 100%; min-height: 40px; padding: 9px 11px; background: #fff; border: 1px solid var(--border); color: var(--text); font-size: 0.78rem; border-radius: 10px; transition: border-color 0.15s ease, box-shadow 0.15s ease; }
+    .ce-field input[type="number"]:focus { outline: none; border-color: rgba(15,109,143,0.48); box-shadow: 0 0 0 4px rgba(15,109,143,0.12); }
+    .ce-field textarea { height: auto; min-height: 56px; font-family: var(--ui-font); font-size: 0.76rem; line-height: 1.45; white-space: pre-wrap; color: var(--text); background: #fff; }
+    .ce-field input[type="color"] { width: 100%; height: 38px; }
     #offline-opts { border-color: var(--border) !important; }
     ::-webkit-scrollbar { width: 9px; height: 9px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -442,6 +470,16 @@
         <div class="text-row"><label for="l-mapside">Position de la carte</label>
           <select id="l-mapside"><option value="right">À droite</option><option value="left">À gauche</option></select>
         </div>
+      </div>
+
+      <div class="group">
+        <div class="label"><span class="dot"></span>Contenu</div>
+        <div class="ce-sub">Phases</div>
+        <div id="phase-editor"></div>
+        <div class="ce-actions"><button class="act" id="btn-add-phase"><span class="ico">＋</span>Ajouter une phase</button></div>
+        <div class="ce-sub">Événements</div>
+        <div id="event-editor"></div>
+        <div class="ce-actions"><button class="act" id="btn-add-event"><span class="ico">＋</span>Ajouter un événement</button></div>
       </div>
 
       <div class="group">
@@ -1579,10 +1617,249 @@ RENDERER_SRC,
         const nm = document.createElement('label'); nm.textContent = p.label || p.id;
         row.appendChild(lab); row.appendChild(inp); row.appendChild(nm); box.appendChild(row);
       });
+      renderContentEditor();
       pushJson();
     }
     function toHex(v, fallback) { return (typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v)) ? v : (typeof v === 'string' && /^#[0-9a-fA-F]{3}$/.test(v) ? '#' + v.slice(1).split('').map(c => c + c).join('') : fallback); }
     function pushJson() { $('json').value = JSON.stringify(config, null, 2); $('err').textContent = ''; }
+
+    // ════════════════════════════════════════════════════════════════
+    //  CONTENT EDITOR — edit every phase/event field without touching JSON.
+    //  Open/close state survives re-renders; structural edits (add / delete /
+    //  reorder) rebuild the lists, plain field edits update config in place so
+    //  focus is preserved. Reordering swaps the `t` positions of neighbours.
+    // ════════════════════════════════════════════════════════════════
+    const ceOpenEvents = new Set();
+    const ceOpenPhases = new Set();
+    const KIND_SUGGESTIONS = ['intelligence','leak','defense','attack','intrusion','impact','analysis','attribution','insurance','recovery'];
+
+    function phaseColorFor(id) {
+      const idx = (config.phases || []).findIndex(p => p.id === id);
+      if (idx >= 0 && config.phases[idx].color) return config.phases[idx].color;
+      return idx >= 0 ? DEFAULT_PHASE_COLORS[idx % DEFAULT_PHASE_COLORS.length] : (config.theme.accent || '#dc3c28');
+    }
+    const ceNum = (v) => { const n = parseFloat(v); return isFinite(n) ? n : null; };
+
+    function ceField(labelText, inputEl) {
+      const f = document.createElement('div'); f.className = 'ce-field';
+      if (labelText != null) { const l = document.createElement('label'); l.textContent = labelText; f.appendChild(l); }
+      f.appendChild(inputEl); return f;
+    }
+    function ceText(value, oninput, type) {
+      const i = document.createElement('input'); i.type = type || 'text';
+      i.value = (value == null ? '' : value); i.spellcheck = false;
+      i.addEventListener('input', () => oninput(i.value));
+      return i;
+    }
+    function ceArea(value, oninput) {
+      const t = document.createElement('textarea'); t.value = (value == null ? '' : value); t.spellcheck = false;
+      t.addEventListener('input', () => oninput(t.value));
+      return t;
+    }
+    function ceMini(label, title, onclick, disabled, danger) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'ce-mini' + (danger ? ' danger' : '');
+      b.textContent = label; b.title = title; b.disabled = !!disabled;
+      b.addEventListener('click', (e) => { e.stopPropagation(); onclick(); });
+      return b;
+    }
+    function ceCard(openSet, key, chipColor, titleText, timeText) {
+      const card = document.createElement('div'); card.className = 'ce-card' + (openSet.has(key) ? ' open' : '');
+      const head = document.createElement('div'); head.className = 'ce-head';
+      const caret = document.createElement('span'); caret.className = 'ce-caret'; caret.textContent = '▶';
+      const chip = document.createElement('span'); chip.className = 'ce-chip'; if (chipColor) chip.style.background = chipColor;
+      const title = document.createElement('span'); title.className = 'ce-htitle'; title.textContent = titleText || '(sans titre)';
+      head.appendChild(caret); head.appendChild(chip); head.appendChild(title);
+      if (timeText != null) { const tm = document.createElement('span'); tm.className = 'ce-htime'; tm.textContent = timeText; head.appendChild(tm); }
+      head.addEventListener('click', () => {
+        if (card.classList.toggle('open')) openSet.add(key); else openSet.delete(key);
+      });
+      const body = document.createElement('div'); body.className = 'ce-body';
+      card.appendChild(head); card.appendChild(body);
+      return { card, head, body, chip, title };
+    }
+
+    function renderContentEditor() {
+      if (!$('phase-editor') || !$('event-editor')) return;
+      renderPhaseEditor();
+      renderEventEditor();
+    }
+
+    function renderPhaseEditor() {
+      const box = $('phase-editor'); box.innerHTML = '';
+      const phases = config.phases || [];
+      phases.forEach((p, i) => {
+        const { card, body, head, chip } = ceCard(ceOpenPhases, p.id || ('p' + i), toHex(p.color, DEFAULT_PHASE_COLORS[i % DEFAULT_PHASE_COLORS.length]), p.label || p.id, null);
+        // header controls
+        head.appendChild(ceMini('↑', 'Monter', () => movePhase(i, -1), i === 0));
+        head.appendChild(ceMini('↓', 'Descendre', () => movePhase(i, 1), i === phases.length - 1));
+        head.appendChild(ceMini('✕', 'Supprimer la phase', () => deletePhase(i), false, true));
+        // fields
+        body.appendChild(ceField('Identifiant (id)', ceText(p.id, v => { p.id = v.trim(); commit(false); })));
+        body.appendChild(ceField('Libellé', (() => {
+          const inp = ceText(p.label, v => { p.label = v; commit(false); });
+          return inp;
+        })()));
+        body.appendChild(ceField('Période (texte affiché)', ceText(p.range, v => { p.range = v; commit(false); })));
+        const row = document.createElement('div'); row.className = 'ce-row2';
+        row.appendChild(ceField('Début (0 → 1)', ceText(p.start, v => { const n = ceNum(v); if (n != null) p.start = n; commit(false); }, 'number')));
+        row.appendChild(ceField('Fin (0 → 1)', ceText(p.end, v => { const n = ceNum(v); if (n != null) p.end = n; commit(false); }, 'number')));
+        body.appendChild(row);
+        body.appendChild(ceField('Couleur', (() => {
+          const c = document.createElement('input'); c.type = 'color'; c.value = toHex(p.color, DEFAULT_PHASE_COLORS[i % DEFAULT_PHASE_COLORS.length]);
+          c.addEventListener('input', () => { p.color = c.value; chip.style.background = c.value; commit(false); });
+          return c;
+        })()));
+        box.appendChild(card);
+      });
+    }
+
+    function renderEventEditor() {
+      const box = $('event-editor'); box.innerHTML = '';
+      const events = config.events || [];
+      const phases = config.phases || [];
+      events.forEach((e, i) => {
+        const tTxt = (typeof e.t === 'number') ? e.t.toFixed(2) : '—';
+        const ref = ceCard(ceOpenEvents, e.id || ('e' + i), phaseColorFor(e.phase), e.title, tTxt);
+        const { card, body, head, chip, title } = ref;
+        head.appendChild(ceMini('↑', 'Monter', () => moveEvent(i, -1), i === 0));
+        head.appendChild(ceMini('↓', 'Descendre', () => moveEvent(i, 1), i === events.length - 1));
+        head.appendChild(ceMini('⧉', 'Dupliquer', () => duplicateEvent(i)));
+        head.appendChild(ceMini('✕', 'Supprimer', () => deleteEvent(i), false, true));
+
+        // Phase + position
+        const row1 = document.createElement('div'); row1.className = 'ce-row2';
+        const sel = document.createElement('select');
+        const ids = phases.map(p => p.id);
+        if (e.phase && ids.indexOf(e.phase) === -1) ids.unshift(e.phase);
+        ids.forEach(id => {
+          const ph = phases.find(p => p.id === id);
+          const o = document.createElement('option'); o.value = id; o.textContent = (ph && ph.label) ? ph.label : id;
+          if (id === e.phase) o.selected = true; sel.appendChild(o);
+        });
+        sel.addEventListener('change', () => { e.phase = sel.value; chip.style.background = phaseColorFor(e.phase); commit(false); });
+        row1.appendChild(ceField('Phase', sel));
+        row1.appendChild(ceField('Position t (0 → 1)', ceText(e.t, v => {
+          const n = ceNum(v); if (n != null) { e.t = Math.max(0, Math.min(1, n)); commit(false); }
+        }, 'number')));
+        body.appendChild(row1);
+
+        // Title
+        body.appendChild(ceField('Titre', ceText(e.title, v => { e.title = v; title.textContent = v || '(sans titre)'; commit(false); })));
+        // Date label + location
+        const row2 = document.createElement('div'); row2.className = 'ce-row2';
+        row2.appendChild(ceField('Date (texte)', ceText(e.dateLabel, v => { e.dateLabel = v; commit(false); })));
+        row2.appendChild(ceField('Lieu', ceText(e.location, v => { e.location = v; commit(false); })));
+        body.appendChild(row2);
+
+        // Coords + severity + kind
+        const hasCoords = Array.isArray(e.coords);
+        const latI = ceText(hasCoords ? e.coords[0] : '', () => {}, 'number');
+        const lonI = ceText(hasCoords ? e.coords[1] : '', () => {}, 'number');
+        const updCoords = () => {
+          const la = ceNum(latI.value), lo = ceNum(lonI.value);
+          if (la != null && lo != null) e.coords = [la, lo]; else delete e.coords;
+          commit(false);
+        };
+        latI.addEventListener('input', updCoords); lonI.addEventListener('input', updCoords);
+        const row3 = document.createElement('div'); row3.className = 'ce-row2';
+        row3.appendChild(ceField('Latitude', latI));
+        row3.appendChild(ceField('Longitude', lonI));
+        body.appendChild(row3);
+
+        const row4 = document.createElement('div'); row4.className = 'ce-row2';
+        row4.appendChild(ceField('Sévérité (1 → 5)', ceText(e.severity, v => { const n = ceNum(v); if (n != null) e.severity = n; else delete e.severity; commit(false); }, 'number')));
+        const kindI = ceText(e.kind, v => { const t = v.trim(); if (t) e.kind = t; else delete e.kind; commit(false); });
+        kindI.setAttribute('list', 'ce-kind-list');
+        row4.appendChild(ceField('Type (kind)', kindI));
+        body.appendChild(row4);
+
+        // Headline + body
+        body.appendChild(ceField('Accroche (headline)', ceArea(e.headline, v => { if (v) e.headline = v; else delete e.headline; commit(false); })));
+        body.appendChild(ceField('Description (body)', ceArea(e.body, v => { if (v) e.body = v; else delete e.body; commit(false); })));
+        // Artifacts
+        body.appendChild(ceField('Artefacts (un par ligne)', ceArea((e.artifacts || []).join('\n'), v => {
+          const arr = v.split('\n').map(s => s.trim()).filter(Boolean);
+          if (arr.length) e.artifacts = arr; else delete e.artifacts;
+          commit(false);
+        })));
+        // Casualties + damage
+        const row5 = document.createElement('div'); row5.className = 'ce-row2';
+        row5.appendChild(ceField('Pertes (casualties)', ceText(e.casualties, v => { if (v) e.casualties = v; else delete e.casualties; commit(false); })));
+        row5.appendChild(ceField('Coût (damageUSD)', ceText(e.damageUSD, v => { if (v) e.damageUSD = v; else delete e.damageUSD; commit(false); })));
+        body.appendChild(row5);
+        // Id (advanced)
+        body.appendChild(ceField('Identifiant (id)', ceText(e.id, v => { e.id = v.trim(); commit(false); })));
+
+        box.appendChild(card);
+      });
+      // shared <datalist> for kind suggestions
+      if (!$('ce-kind-list')) {
+        const dl = document.createElement('datalist'); dl.id = 'ce-kind-list';
+        KIND_SUGGESTIONS.forEach(k => { const o = document.createElement('option'); o.value = k; dl.appendChild(o); });
+        box.appendChild(dl);
+      }
+    }
+
+    // commit(rebuild): push config to JSON + preview; rebuild the editor lists
+    // only when the structure changed (add/delete/reorder).
+    function commit(rebuild) {
+      if (rebuild) renderContentEditor();
+      pushJson();
+      renderPreview();
+    }
+    function sortEvents() { (config.events || []).sort((a, b) => (a.t || 0) - (b.t || 0)); }
+
+    function moveEvent(i, dir) {
+      const a = config.events, j = i + dir;
+      if (j < 0 || j >= a.length) return;
+      const ti = a[i].t, tj = a[j].t; a[i].t = tj; a[j].t = ti;
+      sortEvents(); commit(true);
+    }
+    function deleteEvent(i) {
+      const e = config.events[i];
+      if (e && e.id) ceOpenEvents.delete(e.id);
+      config.events.splice(i, 1); commit(true);
+    }
+    function duplicateEvent(i) {
+      const src = config.events[i];
+      const copy = JSON.parse(JSON.stringify(src));
+      let n = 1; let id; do { id = (src.id || 'e') + '-' + (++n); } while (config.events.some(x => x.id === id));
+      copy.id = id;
+      const next = config.events[i + 1];
+      copy.t = next ? (src.t + next.t) / 2 : Math.min(1, (src.t || 0) + 0.02);
+      copy.title = (src.title || '') + ' (copie)';
+      config.events.splice(i + 1, 0, copy);
+      sortEvents(); ceOpenEvents.add(copy.id); commit(true);
+    }
+    function addEvent() {
+      const a = config.events;
+      const maxT = a.length ? Math.max.apply(null, a.map(e => e.t || 0)) : 0;
+      let n = a.length + 1, id; do { id = 'e' + String(n++).padStart(2, '0'); } while (a.some(x => x.id === id));
+      const e = {
+        id, phase: (config.phases[0] && config.phases[0].id) || '',
+        t: Math.min(1, maxT + 0.03), dateLabel: '', title: 'Nouvel événement',
+        location: '', severity: 1, kind: '', headline: '', body: '',
+      };
+      a.push(e); sortEvents(); ceOpenEvents.add(id); commit(true);
+    }
+    function movePhase(i, dir) {
+      const a = config.phases, j = i + dir;
+      if (j < 0 || j >= a.length) return;
+      const tmp = a[i]; a[i] = a[j]; a[j] = tmp; commit(true);
+    }
+    function deletePhase(i) {
+      const p = config.phases[i];
+      if (p && p.id) ceOpenPhases.delete(p.id);
+      config.phases.splice(i, 1); commit(true);
+    }
+    function addPhase() {
+      const a = config.phases;
+      const lastEnd = a.length ? (a[a.length - 1].end || 1) : 0;
+      let n = a.length + 1, id; do { id = 'phase' + (n++); } while (a.some(x => x.id === id));
+      const p = { id, label: 'Nouvelle phase', range: '', start: lastEnd, end: 1, color: DEFAULT_PHASE_COLORS[a.length % DEFAULT_PHASE_COLORS.length] };
+      a.push(p); ceOpenPhases.add(id); commit(true);
+    }
 
     function applyConfig(raw) {
       config = normalizeConfig(raw);
@@ -1656,6 +1933,9 @@ RENDERER_SRC,
       if (v) config.map.country = v; else delete config.map.country;
       pushJson(); renderPreview();
     });
+
+    $('btn-add-event').addEventListener('click', addEvent);
+    $('btn-add-phase').addEventListener('click', addPhase);
 
     $('btn-example').addEventListener('click', () => applyConfig(DEFAULT_CONFIG));
     $('btn-load').addEventListener('click', () => $('file').click());
