@@ -402,6 +402,12 @@
 
       <div class="group">
         <div class="label"><span class="dot"></span>Style visuel</div>
+        <div class="text-row"><label for="theme-preset">Style du générateur</label>
+          <select id="theme-preset">
+            <option value="cyber-dark">Cyber dark</option>
+            <option value="wavestone">Wavestone</option>
+          </select>
+        </div>
         <div class="text-row"><label for="m-title">Titre</label><input type="text" id="m-title"></div>
         <div class="text-row"><label for="m-sub">Sous-titre</label><input type="text" id="m-sub"></div>
         <div class="text-row"><label for="m-badge">Badge</label><input type="text" id="m-badge"></div>
@@ -485,6 +491,8 @@ const EVENTS = (CFG.events || []).slice().sort((a, b) => (a.t || 0) - (b.t || 0)
 const PHASES = CFG.phases || [];
 const KIND_LABELS = CFG.kindLabels || {};
 const MAP = CFG.map || {};
+const STYLE = THEME.preset === 'wavestone' ? 'wavestone' : 'cyber-dark';
+const isWavestone = STYLE === 'wavestone';
 
 // ── Theme tokens (working style knobs; extend here for future themes) ──
 const C = {
@@ -495,10 +503,23 @@ const C = {
   panel:  THEME.panel  || '#0a0907',
   line:   THEME.line   || 'rgba(230,220,200,0.12)',
   muted:  THEME.muted  || 'rgba(230,220,200,0.55)',
+  subtle: isWavestone ? '#817C95' : 'rgba(230,220,200,0.4)',
+  faint: isWavestone ? '#E6E4EE' : 'rgba(230,220,200,0.12)',
+  surfaceAlt: isWavestone ? '#F5F4F9' : 'rgba(230,220,200,0.05)',
+  hover: isWavestone ? '#F1EEFB' : 'rgba(230,220,200,0.03)',
+  borderStrong: isWavestone ? '#CFCCDC' : 'rgba(230,220,200,0.25)',
+  onAccent: isWavestone ? '#150939' : '#0a0907',
+  mapBg: isWavestone ? '#F5F4F9' : '#0a0907',
+  mapLand: isWavestone ? 'rgba(69,29,199,0.10)' : 'rgba(230,220,200,0.12)',
+  mapLine: isWavestone ? 'rgba(69,29,199,0.30)' : 'rgba(230,220,200,0.28)',
+  radius: isWavestone ? 16 : 0,
+  radiusSm: isWavestone ? 8 : 2,
+  shadow: isWavestone ? '0 12px 28px rgba(22,18,31,0.12)' : 'none',
+  brandGradient: 'radial-gradient(120% 120% at 25% 15%, #5226E0 0%, #451DC7 38%, #2D1380 100%)',
 };
 // ── Typography tokens (configurable font families) ──
 const F = {
-  title: (THEME.fontTitle || 'Fraunces') + ", 'Times New Roman', serif",
+  title: (THEME.fontTitle || 'Fraunces') + (isWavestone ? ", 'Montserrat', sans-serif" : ", 'Times New Roman', serif"),
   body:  (THEME.fontBody  || 'Inter') + ", sans-serif",
   mono:  (THEME.fontMono  || 'JetBrains Mono') + ", monospace",
 };
@@ -650,10 +671,10 @@ const Globe = ({ events, currentTime, activeEvent }) => {
       <svg viewBox={`0 0 ${size} ${size}`} style={{ width:'100%', height:'100%', maxHeight:'100%' }}>
         <defs>
           <radialGradient id="oceanGrad" cx="40%" cy="40%">
-            <stop offset="0%" stopColor="#1a1611" /><stop offset="60%" stopColor="#0a0907" /><stop offset="100%" stopColor="#08070a" />
+            <stop offset="0%" stopColor={isWavestone ? '#FFFFFF' : '#1a1611'} /><stop offset="60%" stopColor={C.mapBg} /><stop offset="100%" stopColor={isWavestone ? '#E6E4EE' : '#08070a'} />
           </radialGradient>
           <radialGradient id="rim" cx="50%" cy="50%">
-            <stop offset="85%" stopColor="rgba(230,220,200,0)" /><stop offset="95%" stopColor="rgba(230,220,200,0.15)" /><stop offset="100%" stopColor="rgba(230,220,200,0)" />
+            <stop offset="85%" stopColor={hexToRgba(C.ink,0)} /><stop offset="95%" stopColor={hexToRgba(C.ink,0.15)} /><stop offset="100%" stopColor={hexToRgba(C.ink,0)} />
           </radialGradient>
           <radialGradient id="shade" cx="70%" cy="70%">
             <stop offset="0%" stopColor="rgba(0,0,0,0)" /><stop offset="100%" stopColor="rgba(0,0,0,0.55)" />
@@ -663,7 +684,7 @@ const Globe = ({ events, currentTime, activeEvent }) => {
           </radialGradient>
         </defs>
         <circle cx={cx} cy={cy} r={R} fill="url(#oceanGrad)" />
-        <g stroke="rgba(230,220,200,0.07)" strokeWidth="0.6" fill="none">
+        <g stroke={hexToRgba(C.ink,0.07)} strokeWidth="0.6" fill="none">
           {[-60,-30,0,30,60].map(lat => {
             const pts = [];
             for (let lon=-180; lon<=180; lon+=6) { const [x,y,v]=project(lat,lon); if (v) pts.push(`${x},${y}`); else if (pts.length) pts.push('M'); }
@@ -682,7 +703,7 @@ const Globe = ({ events, currentTime, activeEvent }) => {
             for (const [lat, lon] of poly) { const [x,y,v]=project(lat,lon); if (v) cur.push(`${x.toFixed(1)},${y.toFixed(1)}`); else if (cur.length) { runs.push(cur); cur=[]; } }
             if (cur.length) runs.push(cur);
             return runs.map((r, j) => r.length < 2 ? null : (
-              <polyline key={`${i}-${j}`} points={r.join(' ')} fill="rgba(230,220,200,0.12)" stroke="none" />
+              <polyline key={`${i}-${j}`} points={r.join(' ')} fill={C.mapLand} stroke="none" />
             ));
           })}
         </g>
@@ -694,7 +715,7 @@ const Globe = ({ events, currentTime, activeEvent }) => {
               for (const [lat, lon] of poly) { const [x,y,v]=project(lat,lon); if (v) cur.push(`${x.toFixed(1)},${y.toFixed(1)}`); else if (cur.length) { runs.push(cur); cur=[]; } }
               if (cur.length) runs.push(cur);
               return runs.map((r, j) => r.length < 2 ? null : (
-                <polyline key={`cb${ci}-${ri}-${j}`} points={r.join(' ')} fill="none" stroke="rgba(230,220,200,0.28)" strokeWidth="0.4" />
+                <polyline key={`cb${ci}-${ri}-${j}`} points={r.join(' ')} fill="none" stroke={C.mapLine} strokeWidth="0.4" />
               ));
             })
           )}
@@ -718,12 +739,12 @@ const Globe = ({ events, currentTime, activeEvent }) => {
                   <animate attributeName="opacity" from="0.7" to="0" dur="1.4s" repeatCount="indefinite" />
                 </circle>
               )}
-              <circle cx={x} cy={y} r={baseR} fill={color} stroke="#0a0907" strokeWidth="1" />
+              <circle cx={x} cy={y} r={baseR} fill={color} stroke={C.mapBg} strokeWidth="1" />
             </g>
           );
         })}
         <circle cx={cx} cy={cy} r={R} fill="url(#rim)" pointerEvents="none" />
-        <circle cx={cx} cy={cy} r={R} fill="none" stroke="rgba(230,220,200,0.18)" strokeWidth="0.8" />
+        <circle cx={cx} cy={cy} r={R} fill="none" stroke={hexToRgba(C.ink,0.18)} strokeWidth="0.8" />
       </svg>
     </div>
   );
@@ -763,9 +784,9 @@ const RegionMap = ({ events, currentTime, activeEvent }) => {
           <radialGradient id="rPulse"><stop offset="0%" stopColor={hexToRgba(C.accent,0.7)} /><stop offset="60%" stopColor={hexToRgba(C.accent,0.18)} /><stop offset="100%" stopColor={hexToRgba(C.accent,0)} /></radialGradient>
           <clipPath id="rClip"><rect x="0" y="0" width={W} height={H} /></clipPath>
         </defs>
-        <rect x="0" y="0" width={W} height={H} fill="#0a0907" />
+        <rect x="0" y="0" width={W} height={H} fill={C.mapBg} />
         {/* graticule */}
-        <g clipPath="url(#rClip)" stroke="rgba(230,220,200,0.06)" strokeWidth="0.6" fill="none">
+        <g clipPath="url(#rClip)" stroke={hexToRgba(C.ink,0.06)} strokeWidth="0.6" fill="none">
           {(() => {
             const lines = [];
             const stepLat = niceStep(latSpan), stepLon = niceStep(lonSpan);
@@ -779,7 +800,7 @@ const RegionMap = ({ events, currentTime, activeEvent }) => {
           {(land || []).map((poly, i) => {
             if (!poly.some(([la, lo]) => inBox(la, lo))) return null;
             const pts = poly.map(([la, lo]) => { const p = project(la, lo); return `${p[0].toFixed(1)},${p[1].toFixed(1)}`; }).join(' ');
-            return <polyline key={i} points={pts} fill="rgba(230,220,200,0.10)" stroke="none" />;
+            return <polyline key={i} points={pts} fill={C.mapLand} stroke="none" />;
           })}
         </g>
         {/* country borders + optional highlight */}
@@ -791,13 +812,13 @@ const RegionMap = ({ events, currentTime, activeEvent }) => {
               const pts = poly.map(([la, lo]) => { const p = project(la, lo); return `${p[0].toFixed(1)},${p[1].toFixed(1)}`; }).join(' ');
               return <polyline key={`c${ci}-${ri}`} points={pts}
                 fill={isHL ? 'rgba(220,180,100,0.18)' : 'none'}
-                stroke={isHL ? 'rgba(212,160,60,0.65)' : 'rgba(230,220,200,0.35)'}
+                stroke={isHL ? hexToRgba(C.accent,0.65) : C.mapLine}
                 strokeWidth={isHL ? '0.9' : '0.5'}
                 strokeLinejoin="round" />;
             });
           })}
         </g>
-        <rect x="0" y="0" width={W} height={H} fill="none" stroke="rgba(230,220,200,0.18)" strokeWidth="1" />
+        <rect x="0" y="0" width={W} height={H} fill="none" stroke={hexToRgba(C.ink,0.18)} strokeWidth="1" />
         {/* cities */}
         <g clipPath="url(#rClip)">
           {firedEvents.map(evt => {
@@ -815,9 +836,9 @@ const RegionMap = ({ events, currentTime, activeEvent }) => {
                     <animate attributeName="opacity" from="0.7" to="0" dur="1.4s" repeatCount="indefinite" />
                   </circle>
                 )}
-                <circle cx={x} cy={y} r={baseR} fill={color} stroke="#0a0907" strokeWidth="1" />
+                <circle cx={x} cy={y} r={baseR} fill={color} stroke={C.mapBg} strokeWidth="1" />
                 {(isActive || ageScale > 0.25) && cityLabel && (
-                  <text x={x + baseR + 4} y={y + 3} fill={isActive ? C.ink : 'rgba(230,220,200,0.6)'} fontFamily={F.mono} fontSize="9" style={{ letterSpacing: '0.04em' }}>{cityLabel}</text>
+                  <text x={x + baseR + 4} y={y + 3} fill={isActive ? C.ink : C.muted} fontFamily={F.mono} fontSize="9" style={{ letterSpacing: '0.04em' }}>{cityLabel}</text>
                 )}
               </g>
             );
@@ -878,11 +899,11 @@ const TimelineTrack = ({ events, phases, currentTime, setCurrentTime, activeId, 
         ))}
       </div>
       {/* Ticks */}
-      <div style={{ position:'relative', height:16, marginBottom:6, fontFamily:F.mono, fontSize:9.5, color:'rgba(230,220,200,0.45)', letterSpacing:'0.08em' }}>
+      <div style={{ position:'relative', height:16, marginBottom:6, fontFamily:F.mono, fontSize:9.5, color:C.subtle, letterSpacing:'0.08em' }}>
         {ticks.map((tick, i) => (
           <div key={i} style={{ position:'absolute', left:`${tick.t*100}%`,
             transform: tick.t >= 0.999 ? 'translateX(-100%)' : tick.t <= 0.001 ? 'translateX(0)' : 'translateX(-50%)', whiteSpace:'nowrap' }}>
-            <span style={{ display:'inline-block', borderLeft:'1px solid rgba(230,220,200,0.25)', paddingLeft:4, paddingTop:1 }}>{tick.label}</span>
+            <span style={{ display:'inline-block', borderLeft:`1px solid ${C.borderStrong}`, paddingLeft:4, paddingTop:1 }}>{tick.label}</span>
           </div>
         ))}
       </div>
@@ -891,12 +912,12 @@ const TimelineTrack = ({ events, phases, currentTime, setCurrentTime, activeId, 
         style={{ position:'relative', height:62, cursor:'pointer', userSelect:'none' }}>
         {phases.map(p => (
           <div key={p.id} style={{ position:'absolute', left:`${p.start*100}%`, width:`${(p.end-p.start)*100}%`, top:22, height:18,
-            background: hexToRgba(phaseColor(p.id), 0.14), borderLeft:'1px solid rgba(230,220,200,0.15)' }} />
+            background: hexToRgba(phaseColor(p.id), 0.14), borderLeft:`1px solid ${C.line}` }} />
         ))}
         <div style={{ position:'absolute', left:0, width:`${currentTime*100}%`, top:22, height:18,
           background:`linear-gradient(90deg, ${hexToRgba(firstC,0.35)} 0%, ${hexToRgba(C.accent,0.5)} 50%, ${hexToRgba(lastC,0.25)} 100%)`,
-          pointerEvents:'none', mixBlendMode:'screen' }} />
-        <div style={{ position:'absolute', left:0, right:0, top:30, height:2, background:'rgba(230,220,200,0.25)', pointerEvents:'none' }} />
+          pointerEvents:'none', mixBlendMode:isWavestone?'multiply':'screen' }} />
+        <div style={{ position:'absolute', left:0, right:0, top:30, height:2, background:C.borderStrong, pointerEvents:'none' }} />
         {events.map((evt, i) => {
           const active = evt.id === activeId, fired = evt.t <= currentTime, color = phaseColor(evt.phase);
           const stagger = (i % 2 === 0) ? -1 : 1;
@@ -905,15 +926,15 @@ const TimelineTrack = ({ events, phases, currentTime, setCurrentTime, activeId, 
               style={{ position:'absolute', left:`${evt.t*100}%`, top: stagger>0?42:10, transform:'translateX(-50%)', cursor:'pointer', zIndex: active?20:10 }} title={evt.title}>
               <div style={{ width: active?12:8, height: active?12:8, background: fired?color:'transparent', border:`1.5px solid ${color}`, borderRadius:'50%',
                 transition:'all 180ms', boxShadow: active?`0 0 0 4px ${color}33, 0 0 12px ${color}`:'none' }} />
-              <div style={{ position:'absolute', left:'50%', top: stagger>0?-12:8, height:14, width:1, background: fired?color:'rgba(230,220,200,0.2)', transform:'translateX(-50%)' }} />
+              <div style={{ position:'absolute', left:'50%', top: stagger>0?-12:8, height:14, width:1, background: fired?color:C.faint, transform:'translateX(-50%)' }} />
             </div>
           );
         })}
-        <div style={{ position:'absolute', left:`${currentTime*100}%`, top:0, bottom:0, width:2, transform:'translateX(-50%)', background:C.ink, pointerEvents:'none', boxShadow:'0 0 12px rgba(246,241,228,0.6)' }}>
+        <div style={{ position:'absolute', left:`${currentTime*100}%`, top:0, bottom:0, width:2, transform:'translateX(-50%)', background:C.ink, pointerEvents:'none', boxShadow:`0 0 12px ${hexToRgba(C.ink,0.35)}` }}>
           <div style={{ position:'absolute', top:-4, left:'50%', transform:'translateX(-50%)', width:10, height:10, background:C.ink, clipPath:'polygon(0 0, 100% 0, 50% 100%)' }} />
         </div>
         {hoverT !== null && !dragging && (
-          <div style={{ position:'absolute', left:`${hoverT*100}%`, top:0, bottom:0, width:1, transform:'translateX(-50%)', background:'rgba(246,241,228,0.3)', pointerEvents:'none' }} />
+          <div style={{ position:'absolute', left:`${hoverT*100}%`, top:0, bottom:0, width:1, transform:'translateX(-50%)', background:hexToRgba(C.ink,0.3), pointerEvents:'none' }} />
         )}
       </div>
     </div>
@@ -922,8 +943,8 @@ const TimelineTrack = ({ events, phases, currentTime, setCurrentTime, activeId, 
 
 // ═══════════════════════ DETAIL + LIST ═══════════════════════
 const MetaRow = ({ label, value, highlight }) => (
-  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', gap:16, padding:'6px 0', borderBottom:'1px dashed rgba(230,220,200,0.1)' }}>
-    <span style={{ fontFamily:F.mono, fontSize:10, letterSpacing:'0.14em', textTransform:'uppercase', color:'rgba(230,220,200,0.5)' }}>{label}</span>
+  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', gap:16, padding:'6px 0', borderBottom:`1px dashed ${C.line}` }}>
+    <span style={{ fontFamily:F.mono, fontSize:10, letterSpacing:'0.14em', textTransform:'uppercase', color:C.muted }}>{label}</span>
     <span style={{ fontFamily:F.mono, fontSize:13, color: highlight || C.ink, fontWeight:600, textAlign:'right' }}>{value}</span>
   </div>
 );
@@ -931,7 +952,7 @@ const MetaRow = ({ label, value, highlight }) => (
 const SEV_LABELS = ['','LOW','MODERATE','HIGH','SEVERE','CRITICAL'];
 const EventDetail = ({ event }) => {
   if (!event) return (
-    <div style={{ padding:24, color:'rgba(230,220,200,0.4)', fontFamily:F.mono, fontSize:12, letterSpacing:'0.04em' }}>
+    <div style={{ padding:24, color:C.subtle, fontFamily:F.mono, fontSize:12, letterSpacing:'0.04em' }}>
       Scrub the timeline or click an event to inspect the record.
     </div>
   );
@@ -939,37 +960,37 @@ const EventDetail = ({ event }) => {
   return (
     <div style={{ padding:'28px 32px 36px', fontFamily:F.body, color: C.fg, position:'relative', overflowY:'auto', height:'100%', boxSizing:'border-box' }}>
       <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:20, fontFamily:F.mono, fontSize:10, letterSpacing:'0.16em', textTransform:'uppercase' }}>
-        {event.phase && <span style={{ padding:'3px 8px', background:color, color:'#13110e', fontWeight:700 }}>{phaseLabel(event.phase)}</span>}
-        {event.kind && <span style={{ color:'rgba(230,220,200,0.5)' }}>{kindLabel(event.kind)}</span>}
-        <span style={{ color:'rgba(230,220,200,0.4)', marginLeft:'auto', fontSize:10 }}>FILE #{String(event.id).toUpperCase()}</span>
+        {event.phase && <span style={{ padding:'3px 8px', background:color, color:C.onAccent, fontWeight:700, borderRadius:C.radiusSm }}>{phaseLabel(event.phase)}</span>}
+        {event.kind && <span style={{ color:C.muted }}>{kindLabel(event.kind)}</span>}
+        <span style={{ color:C.subtle, marginLeft:'auto', fontSize:10 }}>FILE #{String(event.id).toUpperCase()}</span>
       </div>
       {(event.dateLabel || event.location) && (
-        <div style={{ fontFamily:F.mono, fontSize:11, color:'rgba(230,220,200,0.55)', letterSpacing:'0.08em', marginBottom:6 }}>
+        <div style={{ fontFamily:F.mono, fontSize:11, color:C.muted, letterSpacing:'0.08em', marginBottom:6 }}>
           {[event.dateLabel, event.location].filter(Boolean).join(' · ').toUpperCase()}
         </div>
       )}
       <h2 style={{ margin:'0 0 18px 0', fontFamily:F.title, fontSize:34, fontWeight:500, lineHeight:1.08, letterSpacing:'-0.01em', color:C.ink }}>{event.title}</h2>
       {showSeverity && event.severity && (
-        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:20, fontFamily:F.mono, fontSize:10, letterSpacing:'0.1em', color:'rgba(230,220,200,0.6)' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:20, fontFamily:F.mono, fontSize:10, letterSpacing:'0.1em', color:C.muted }}>
           <span>SEVERITY</span>
-          <div style={{ display:'flex', gap:3 }}>{[1,2,3,4,5].map(i => <div key={i} style={{ width:14, height:6, background: i<=event.severity?color:'rgba(230,220,200,0.12)' }} />)}</div>
-          <span style={{ color:'rgba(230,220,200,0.4)', marginLeft:8 }}>{SEV_LABELS[event.severity]}</span>
+          <div style={{ display:'flex', gap:3 }}>{[1,2,3,4,5].map(i => <div key={i} style={{ width:14, height:6, background: i<=event.severity?color:C.faint, borderRadius:isWavestone?999:0 }} />)}</div>
+          <span style={{ color:C.subtle, marginLeft:8 }}>{SEV_LABELS[event.severity]}</span>
         </div>
       )}
       {event.headline && (
         <div style={{ borderLeft:`2px solid ${color}`, paddingLeft:16, marginBottom:22, fontFamily:F.title, fontSize:17, lineHeight:1.45, color:C.fg, fontStyle:'italic' }}>{event.headline}</div>
       )}
-      {event.body && <div style={{ fontSize:14.5, lineHeight:1.65, color:'rgba(230,220,200,0.88)', marginBottom:22 }}>{event.body}</div>}
+      {event.body && <div style={{ fontSize:14.5, lineHeight:1.65, color:C.fg, marginBottom:22 }}>{event.body}</div>}
       {(event.casualties || event.damageUSD || (showArtifacts && event.artifacts && event.artifacts.length)) && (
-        <div style={{ display:'grid', gridTemplateColumns:'1fr', gap:12, marginTop:24, paddingTop:20, borderTop:'1px solid rgba(230,220,200,0.12)' }}>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr', gap:12, marginTop:24, paddingTop:20, borderTop:`1px solid ${C.line}` }}>
           {event.casualties && <MetaRow label="Impact" value={event.casualties} />}
           {event.damageUSD && <MetaRow label="Damage" value={event.damageUSD} highlight={color} />}
           {showArtifacts && event.artifacts && event.artifacts.length > 0 && (
             <div>
-              <div style={{ fontFamily:F.mono, fontSize:10, letterSpacing:'0.14em', textTransform:'uppercase', color:'rgba(230,220,200,0.45)', marginBottom:8 }}>Artifacts</div>
+              <div style={{ fontFamily:F.mono, fontSize:10, letterSpacing:'0.14em', textTransform:'uppercase', color:C.subtle, marginBottom:8 }}>Artifacts</div>
               <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
                 {event.artifacts.map((a, i) => (
-                  <span key={i} style={{ fontFamily:F.mono, fontSize:11, padding:'3px 8px', background:'rgba(230,220,200,0.06)', border:'1px solid rgba(230,220,200,0.14)', color:C.fg }}>{a}</span>
+                  <span key={i} style={{ fontFamily:F.mono, fontSize:11, padding:'3px 8px', background:C.surfaceAlt, border:`1px solid ${C.line}`, borderRadius:C.radiusSm, color:C.fg }}>{a}</span>
                 ))}
               </div>
             </div>
@@ -992,7 +1013,7 @@ const EventList = ({ events, activeId, onSelect, currentTime }) => {
   }, [activeId]);
   return (
     <div ref={listRef} style={{ height:'100%', overflowY:'auto', padding:'16px 0' }}>
-      <div style={{ padding:'0 20px 12px', fontFamily:F.mono, fontSize:10, letterSpacing:'0.18em', textTransform:'uppercase', color:'rgba(230,220,200,0.4)' }}>
+      <div style={{ padding:'0 20px 12px', fontFamily:F.mono, fontSize:10, letterSpacing:'0.18em', textTransform:'uppercase', color:C.subtle }}>
         Chronology · {events.length} records
       </div>
       {events.map(evt => {
@@ -1000,14 +1021,14 @@ const EventList = ({ events, activeId, onSelect, currentTime }) => {
         return (
           <div key={evt.id} ref={active?activeRef:null} onClick={() => onSelect(evt)}
             style={{ padding:'10px 20px 10px 16px', borderLeft:`3px solid ${active?color:fired?color+'66':'transparent'}`,
-              background: active?'rgba(230,220,200,0.05)':'transparent', cursor:'pointer', transition:'background 150ms', display:'flex', gap:10, alignItems:'flex-start' }}
-            onMouseEnter={(e)=>{ if(!active) e.currentTarget.style.background='rgba(230,220,200,0.03)'; }}
+              background: active?C.surfaceAlt:'transparent', cursor:'pointer', transition:'background 150ms', display:'flex', gap:10, alignItems:'flex-start' }}
+            onMouseEnter={(e)=>{ if(!active) e.currentTarget.style.background=C.hover; }}
             onMouseLeave={(e)=>{ if(!active) e.currentTarget.style.background='transparent'; }}>
-            <div style={{ fontFamily:F.mono, fontSize:9, letterSpacing:'0.08em', color: fired?'rgba(230,220,200,0.55)':'rgba(230,220,200,0.25)', width:54, flexShrink:0, paddingTop:2, lineHeight:1.4 }}>
+            <div style={{ fontFamily:F.mono, fontSize:9, letterSpacing:'0.08em', color: fired?C.muted:C.subtle, width:54, flexShrink:0, paddingTop:2, lineHeight:1.4 }}>
               {shortDate(evt.dateLabel)}
             </div>
             <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ fontFamily:F.body, fontSize:12.5, fontWeight: active?600:500, color: active?C.ink:fired?C.fg:'rgba(230,220,200,0.45)', lineHeight:1.3 }}>{evt.title}</div>
+              <div style={{ fontFamily:F.body, fontSize:12.5, fontWeight: active?600:500, color: active?C.ink:fired?C.fg:C.subtle, lineHeight:1.3 }}>{evt.title}</div>
               {evt.kind && <div style={{ fontFamily:F.mono, fontSize:9, color: color+'bb', letterSpacing:'0.12em', marginTop:3, textTransform:'uppercase' }}>{kindLabel(evt.kind)}</div>}
             </div>
           </div>
@@ -1020,24 +1041,24 @@ const EventList = ({ events, activeId, onSelect, currentTime }) => {
 // ═══════════════════════ CHROME ═══════════════════════
 const Stat = ({ label, value, accent, mono }) => (
   <div style={{ display:'flex', flexDirection:'column', gap:2, minWidth:0 }}>
-    <span style={{ fontFamily:F.mono, fontSize:9, letterSpacing:'0.14em', textTransform:'uppercase', color:'rgba(230,220,200,0.45)' }}>{label}</span>
-    <span style={{ fontFamily: mono!==false?F.mono:F.body, fontSize:13, fontWeight:600, color: accent?C.accent:C.ink, fontVariantNumeric:'tabular-nums' }}>{value}</span>
+    <span style={{ fontFamily:F.mono, fontSize:9, letterSpacing:'0.14em', textTransform:'uppercase', color:isWavestone?'rgba(255,255,255,0.58)':C.subtle }}>{label}</span>
+    <span style={{ fontFamily: mono!==false?F.mono:F.body, fontSize:13, fontWeight:600, color: accent?C.accent:(isWavestone?'#FFFFFF':C.ink), fontVariantNumeric:'tabular-nums' }}>{value}</span>
   </div>
 );
 const LegendDot = ({ color, label }) => (
   <div style={{ display:'flex', alignItems:'center', gap:6 }}><div style={{ width:8, height:8, borderRadius:'50%', background:color }} /><span>{label}</span></div>
 );
 const PlayButton = ({ playing, onClick }) => (
-  <button onClick={onClick} style={{ width:40, height:40, background: playing?'rgba(230,220,200,0.1)':C.accent, border:'1px solid rgba(230,220,200,0.2)', color: playing?C.ink:'#0a0907', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', borderRadius:2 }} title={playing?'Pause (space)':'Play (space)'}>
+  <button onClick={onClick} style={{ width:40, height:40, background: playing?C.surfaceAlt:C.accent, border:`1px solid ${C.line}`, color: playing?C.ink:C.onAccent, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', borderRadius:isWavestone?999:2, boxShadow:playing?'none':C.shadow }} title={playing?'Pause (space)':'Play (space)'}>
     {playing ? <svg width="12" height="14" viewBox="0 0 14 16"><rect x="1" y="0" width="4" height="16" fill="currentColor"/><rect x="9" y="0" width="4" height="16" fill="currentColor"/></svg>
              : <svg width="12" height="14" viewBox="0 0 14 16"><path d="M1 0 L13 8 L1 16 Z" fill="currentColor"/></svg>}
   </button>
 );
-const ctrlBtnStyle = { width:34, height:34, background:'rgba(230,220,200,0.04)', border:'1px solid rgba(230,220,200,0.14)', color:'rgba(230,220,200,0.7)', cursor:'pointer', fontSize:14, fontFamily:F.mono, borderRadius:2 };
+const ctrlBtnStyle = { width:34, height:34, background:C.surfaceAlt, border:`1px solid ${C.line}`, color:C.fg, cursor:'pointer', fontSize:14, fontFamily:F.mono, borderRadius:isWavestone?999:2 };
 const SpeedControl = ({ speed, setSpeed }) => (
   <div style={{ display:'flex', gap:1, fontFamily:F.mono, fontSize:10 }}>
     {[1,2,4,8].map(s => (
-      <button key={s} onClick={() => setSpeed(s)} style={{ padding:'8px 10px', background: speed===s?'#e6dcc8':'rgba(230,220,200,0.04)', color: speed===s?'#0a0907':'rgba(230,220,200,0.7)', border:'1px solid rgba(230,220,200,0.14)', cursor:'pointer', fontWeight: speed===s?700:500 }}>{s}×</button>
+      <button key={s} onClick={() => setSpeed(s)} style={{ padding:'8px 10px', background: speed===s?(isWavestone?'#451DC7':C.fg):C.surfaceAlt, color: speed===s?(isWavestone?'#FFFFFF':C.onAccent):C.fg, border:`1px solid ${C.line}`, cursor:'pointer', fontWeight: speed===s?700:500, borderRadius:C.radiusSm }}>{s}×</button>
     ))}
   </div>
 );
@@ -1095,7 +1116,7 @@ const App = () => {
   const [vw, setVw] = useState(() => typeof window !== 'undefined' ? window.innerWidth : 1400);
   useEffect(() => { const onR = () => setVw(window.innerWidth); window.addEventListener('resize', onR); return () => window.removeEventListener('resize', onR); }, []);
   const compact = vw < 1400;
-  const leftW = compact ? 220 : 280, rightW = compact ? 360 : 460;
+  const leftW = compact ? 170 : 280, rightW = compact ? 250 : 460;
   const currentPhase = phases.find(p => currentTime >= p.start && currentTime < p.end) || phases[phases.length-1] || {};
 
   // Adaptive column layout: present blocks + map side (alternate layouts)
@@ -1110,15 +1131,15 @@ const App = () => {
   const edge = (selfCol, otherCol) => otherCol == null ? {} : (otherCol > selfCol ? { borderRight: sep } : { borderLeft: sep });
 
   return (
-    <div style={{ height:'100%', width:'100%', display:'grid', gridTemplateRows:'auto 36vh 1fr', gridTemplateColumns: gridCols, background:C.bg, color:C.fg, fontFamily:F.body, overflow:'hidden' }}>
+    <div style={{ height:'100%', width:'100%', display:'grid', gridTemplateRows:'auto 36vh 1fr', gridTemplateColumns: gridCols, background:C.bg, color:C.fg, fontFamily:F.body, overflow:'hidden', gap:isWavestone?12:0, padding:isWavestone?12:0 }}>
       {/* Header */}
-      <header style={{ gridColumn:'1 / -1', borderBottom:`1px solid ${C.line}`, padding:'14px 28px 12px', display:'flex', alignItems:'center', gap:20, background:C.panel, flexWrap:'wrap' }}>
+      <header style={{ gridColumn:'1 / -1', borderBottom:`1px solid ${C.line}`, padding:'14px 28px 12px', display:'flex', alignItems:'center', gap:20, background:isWavestone?C.brandGradient:C.panel, borderRadius:C.radius, boxShadow:C.shadow, flexWrap:'wrap' }}>
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-          <div style={{ width:10, height:10, background:C.accent, borderRadius:1, animation:'pulse 1.6s infinite' }} />
-          {META.badge && <div style={{ fontFamily:F.mono, fontSize:10, letterSpacing:'0.2em', color:'rgba(230,220,200,0.55)', textTransform:'uppercase' }}>{META.badge}</div>}
+          <div style={{ width:10, height:10, background:C.accent, borderRadius:isWavestone?'50%':1, animation:'pulse 1.6s infinite' }} />
+          {META.badge && <div style={{ fontFamily:F.mono, fontSize:10, letterSpacing:'0.2em', color:isWavestone?'rgba(255,255,255,0.72)':C.muted, textTransform:'uppercase' }}>{META.badge}</div>}
         </div>
-        <div style={{ fontFamily:F.title, fontSize:22, fontWeight:500, letterSpacing:'-0.01em', color:C.ink }}>
-          {META.title || 'Timeline'}{META.subtitle && <span style={{ color:'rgba(230,220,200,0.4)', fontStyle:'italic', fontWeight:400 }}> {META.subtitle}</span>}
+        <div style={{ fontFamily:F.title, fontSize:22, fontWeight:isWavestone?700:500, letterSpacing:'-0.01em', color:isWavestone?'#FFFFFF':C.ink }}>
+          {META.title || 'Timeline'}{META.subtitle && <span style={{ color:isWavestone?'rgba(255,255,255,0.64)':C.subtle, fontStyle:isWavestone?'normal':'italic', fontWeight:400 }}> {META.subtitle}</span>}
         </div>
         <div style={{ marginLeft:'auto', display:'flex', gap:24, alignItems:'center', flexWrap:'wrap' }}>
           <Stat label="Records" value={`${firedCount} / ${events.length}`} />
@@ -1128,21 +1149,21 @@ const App = () => {
       </header>
 
       {/* Timeline hero */}
-      <section style={{ gridColumn:'1 / -1', gridRow:'2 / 3', background:`linear-gradient(180deg, ${C.panel} 0%, ${C.bg} 100%)`, borderBottom:`1px solid ${C.line}`, padding:'22px 40px 24px', display:'flex', flexDirection:'column', gap:14, overflow:'hidden' }}>
+      <section style={{ gridColumn:'1 / -1', gridRow:'2 / 3', background:isWavestone?C.panel:`linear-gradient(180deg, ${C.panel} 0%, ${C.bg} 100%)`, border:`1px solid ${C.line}`, borderRadius:C.radius, boxShadow:C.shadow, padding:'22px 40px 24px', display:'flex', flexDirection:'column', gap:14, overflow:'hidden' }}>
         <div style={{ display:'flex', alignItems:'center', gap:16, flexWrap:'wrap' }}>
           {currentPhase.label && (
-            <span style={{ padding:'4px 12px', background: phaseColor(currentPhase.id), color:'#0a0907', fontFamily:F.mono, fontWeight:700, letterSpacing:'0.18em', textTransform:'uppercase', fontSize:10 }}>
+            <span style={{ padding:'4px 12px', background: phaseColor(currentPhase.id), color:C.onAccent, fontFamily:F.mono, fontWeight:700, letterSpacing:'0.18em', textTransform:'uppercase', fontSize:10, borderRadius:isWavestone?999:0 }}>
               ▸ PHASE · {phaseLabel(currentPhase.id)}
             </span>
           )}
-          {currentPhase.range && <span style={{ fontFamily:F.mono, fontSize:11, letterSpacing:'0.1em', color:'rgba(230,220,200,0.6)' }}>{currentPhase.range}</span>}
-          {active && <span style={{ marginLeft:10, fontFamily:F.title, fontSize:15, fontStyle:'italic', color:'rgba(230,220,200,0.72)' }}>
-            <span style={{ color:'rgba(230,220,200,0.4)' }}>viewing · </span>{active.dateLabel}</span>}
+          {currentPhase.range && <span style={{ fontFamily:F.mono, fontSize:11, letterSpacing:'0.1em', color:C.muted }}>{currentPhase.range}</span>}
+          {active && <span style={{ marginLeft:10, fontFamily:F.title, fontSize:15, fontStyle:isWavestone?'normal':'italic', color:C.fg }}>
+            <span style={{ color:C.subtle }}>viewing · </span>{active.dateLabel}</span>}
           {showPlayback && (
             <div style={{ marginLeft:'auto', display:'flex', gap:10, alignItems:'center' }}>
               <PlayButton playing={playing} onClick={() => setPlaying(p => !p)} />
               <button onClick={() => { setCurrentTime(0); if (firstId) setActiveId(firstId); setPlaying(false); }} style={ctrlBtnStyle} title="Reset">⏮</button>
-              <SpeedControl speed={speed} setSpeed={setSpeed} />
+              {vw >= 1050 && <SpeedControl speed={speed} setSpeed={setSpeed} />}
             </div>
           )}
         </div>
@@ -1151,31 +1172,31 @@ const App = () => {
             <TimelineTrack events={events} phases={phases} currentTime={currentTime} setCurrentTime={setCurrentTime} activeId={activeId} setActiveId={setActiveId} setPlaying={setPlaying} />
           </div>
         </div>
-        <div style={{ fontFamily:F.mono, fontSize:9.5, letterSpacing:'0.14em', color:'rgba(230,220,200,0.38)', textTransform:'uppercase', textAlign:'center' }}>
+        <div style={{ fontFamily:F.mono, fontSize:9.5, letterSpacing:'0.14em', color:C.subtle, textTransform:'uppercase', textAlign:'center' }}>
           ← → step events &nbsp;·&nbsp; {showPlayback ? 'space play/pause · ' : ''}drag track to scrub &nbsp;·&nbsp; click pins to jump
         </div>
       </section>
 
       {/* Row 3 */}
       {showList && (
-        <aside style={{ gridRow:'3 / 4', gridColumn: String(listCol), ...edge(listCol, detailCol), overflow:'hidden', background:'rgba(10,9,7,0.6)', minHeight:0 }}>
+        <aside style={{ gridRow:'3 / 4', gridColumn: String(listCol), ...edge(listCol, detailCol), overflow:'hidden', background:isWavestone?C.panel:'rgba(10,9,7,0.6)', borderRadius:C.radius, boxShadow:C.shadow, minHeight:0 }}>
           <EventList events={events} activeId={activeId} onSelect={(e) => { setActiveId(e.id); setCurrentTime(e.t); setPlaying(false); }} currentTime={currentTime} />
         </aside>
       )}
-      <main style={{ gridRow:'3 / 4', gridColumn: String(detailCol), overflow:'hidden', background:'rgba(10,9,7,0.4)', minHeight:0, ...(mapSide==='right' ? edge(detailCol, mapCol) : edge(detailCol, listCol)) }}>
+      <main style={{ gridRow:'3 / 4', gridColumn: String(detailCol), overflow:'hidden', background:isWavestone?C.panel:'rgba(10,9,7,0.4)', borderRadius:C.radius, boxShadow:C.shadow, minHeight:0, ...(mapSide==='right' ? edge(detailCol, mapCol) : edge(detailCol, listCol)) }}>
         <EventDetail event={active} />
       </main>
       {showMap && (
-        <section style={{ gridRow:'3 / 4', gridColumn: String(mapCol), ...edge(mapCol, detailCol), padding:'20px 24px 22px', display:'flex', flexDirection:'column', gap:12, overflow:'hidden', minWidth:0, minHeight:0, background:'radial-gradient(ellipse at center, rgba(20,18,15,0.8) 0%, rgba(10,9,7,1) 70%)' }}>
-          <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', fontFamily:F.mono, fontSize:9.5, letterSpacing:'0.18em', textTransform:'uppercase', color:'rgba(230,220,200,0.55)' }}>
-            <span>{MAP.label || (MAP.mode === 'region' ? 'Incident Map' : 'Incident Globe')}</span>{active && active.location && <span style={{ color:'rgba(230,220,200,0.4)' }}>{String(active.location).split(',')[0]}</span>}
+        <section style={{ gridRow:'3 / 4', gridColumn: String(mapCol), ...edge(mapCol, detailCol), padding:'20px 24px 22px', display:'flex', flexDirection:'column', gap:12, overflow:'hidden', minWidth:0, minHeight:0, borderRadius:C.radius, boxShadow:C.shadow, background:isWavestone?C.panel:'radial-gradient(ellipse at center, rgba(20,18,15,0.8) 0%, rgba(10,9,7,1) 70%)' }}>
+          <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', fontFamily:F.mono, fontSize:9.5, letterSpacing:'0.18em', textTransform:'uppercase', color:C.muted }}>
+            <span>{MAP.label || (MAP.mode === 'region' ? 'Incident Map' : 'Incident Globe')}</span>{active && active.location && <span style={{ color:C.subtle }}>{String(active.location).split(',')[0]}</span>}
           </div>
           <div style={{ flex:1, minHeight:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
             {MAP.mode === 'region'
               ? <RegionMap events={events} currentTime={currentTime} activeEvent={active} />
               : <Globe events={events} currentTime={currentTime} activeEvent={active} />}
           </div>
-          <div style={{ display:'flex', gap:16, justifyContent:'center', flexWrap:'wrap', fontFamily:F.mono, fontSize:9.5, letterSpacing:'0.14em', textTransform:'uppercase', color:'rgba(230,220,200,0.5)' }}>
+          <div style={{ display:'flex', gap:16, justifyContent:'center', flexWrap:'wrap', fontFamily:F.mono, fontSize:9.5, letterSpacing:'0.14em', textTransform:'uppercase', color:C.muted }}>
             {phases.map(p => <LegendDot key={p.id} color={phaseColor(p.id)} label={phaseLabel(p.id)} />)}
           </div>
         </section>
@@ -1202,7 +1223,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App />);
         badge: 'CLASSIFIED · DOSSIER 2017-27/06',
         lang: 'en',
       },
-      theme: { bg: '#0d0b08', fg: '#e6dcc8', accent: '#dc3c28', panel: '#0a0907' },
+      theme: { preset: 'cyber-dark', bg: '#0d0b08', fg: '#e6dcc8', accent: '#dc3c28', panel: '#0a0907' },
       layout: { showMap: true, showEventList: true, showSeverity: true, showArtifacts: true, showPlayback: true },
       phases: [
         { id: 'prelude',    label: 'Pre-crisis · Weaponization',       range: '2013 — May 2017',     start: 0.00, end: 0.40, color: '#d4a03c' },
@@ -1240,10 +1261,26 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App />);
     const $ = (id) => document.getElementById(id);
     const RENDERER_SRC = $('tpl-renderer').textContent;
     const DEFAULT_PHASE_COLORS = ['#d4a03c','#dc3c28','#b4afa5','#6c9b7d','#7d8bb0','#b07d9b'];
+    const THEME_PRESETS = {
+      'cyber-dark': {
+        preset: 'cyber-dark',
+        bg: '#0d0b08', fg: '#e6dcc8', ink: '#f6f1e4', accent: '#dc3c28', panel: '#0a0907',
+        line: '#2a2620', muted: '#9a9283',
+        fontTitle: 'Fraunces', fontBody: 'Inter', fontMono: 'JetBrains Mono',
+        phaseColors: ['#d4a03c','#dc3c28','#b4afa5','#6c9b7d','#7d8bb0','#b07d9b'],
+      },
+      wavestone: {
+        preset: 'wavestone',
+        bg: '#F5F4F9', fg: '#3A3550', ink: '#16121F', accent: '#04F06A', panel: '#FFFFFF',
+        line: '#E6E4EE', muted: '#6B6580',
+        fontTitle: 'Poppins', fontBody: 'Inter', fontMono: 'IBM Plex Mono',
+        phaseColors: ['#451DC7','#228D95','#088A42','#866CDB','#3E9BA3','#D8412F'],
+      },
+    };
 
     // Curated Google Fonts (any other family can be set via the JSON editor).
     const FONTS = {
-      title: ['Fraunces', 'Playfair Display', 'Lora', 'Merriweather', 'Cormorant Garamond', 'Spectral', 'Inter'],
+      title: ['Fraunces', 'Poppins', 'Playfair Display', 'Lora', 'Merriweather', 'Cormorant Garamond', 'Spectral', 'Inter'],
       body:  ['Inter', 'Work Sans', 'Source Sans 3', 'Roboto', 'Open Sans', 'Lato', 'Nunito Sans'],
       mono:  ['JetBrains Mono', 'IBM Plex Mono', 'Fira Code', 'Roboto Mono', 'Source Code Pro', 'Space Mono'],
     };
@@ -1266,12 +1303,14 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App />);
       const cfg = JSON.parse(JSON.stringify(raw || {}));
       cfg.meta = cfg.meta || {};
       cfg.theme = Object.assign({
-        bg: '#0d0b08', fg: '#e6dcc8', ink: '#f6f1e4', accent: '#dc3c28', panel: '#0a0907',
+        preset: 'cyber-dark', bg: '#0d0b08', fg: '#e6dcc8', ink: '#f6f1e4', accent: '#dc3c28', panel: '#0a0907',
         line: 'rgba(230,220,200,0.12)', scale: 1,
         fontTitle: 'Fraunces', fontBody: 'Inter', fontMono: 'JetBrains Mono',
       }, cfg.theme || {});
+      if (!THEME_PRESETS[cfg.theme.preset]) cfg.theme.preset = 'cyber-dark';
       cfg.layout = Object.assign({ showMap: true, showEventList: true, showSeverity: true, showArtifacts: true, showPlayback: true, mapSide: 'right' }, cfg.layout || {});
       cfg.map = Object.assign({ mode: 'globe' }, cfg.map || {});
+      const presetPhaseColors = THEME_PRESETS[cfg.theme.preset].phaseColors;
       let events = Array.isArray(cfg.events) ? cfg.events.slice() : [];
       events.forEach((e, i) => { if (!e.id) e.id = 'e' + String(i + 1).padStart(2, '0'); });
 
@@ -1297,15 +1336,26 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App />);
         phases = order.map((id, i) => {
           const members = events.filter(e => e.phase === id);
           const start = members.length ? Math.min.apply(null, members.map(e => e.t)) : 0;
-          return { id: id, label: id, start: start, color: DEFAULT_PHASE_COLORS[i % DEFAULT_PHASE_COLORS.length] };
+          return { id: id, label: id, start: start, color: presetPhaseColors[i % presetPhaseColors.length] };
         });
         phases.forEach((p, i) => { p.end = (i < phases.length - 1) ? phases[i + 1].start : 1.0; if (i === 0) p.start = 0; });
       } else {
-        phases.forEach((p, i) => { if (!p.color) p.color = DEFAULT_PHASE_COLORS[i % DEFAULT_PHASE_COLORS.length]; });
+        phases.forEach((p, i) => { if (!p.color) p.color = presetPhaseColors[i % presetPhaseColors.length]; });
       }
       cfg.events = events;
       cfg.phases = phases;
       return cfg;
+    }
+
+    function generatorBackground(t) {
+      return t.preset === 'wavestone'
+        ? 'radial-gradient(circle at top right, rgba(4,240,106,0.10), transparent 24%), radial-gradient(circle at top left, rgba(69,29,199,0.10), transparent 30%), #F5F4F9'
+        : (t.bg || '#0d0b08');
+    }
+    function generatorAmbient(t) {
+      return t.preset === 'wavestone'
+        ? 'radial-gradient(circle at 20% 30%, rgba(69,29,199,0.05) 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(4,240,106,0.04) 0%, transparent 50%)'
+        : 'radial-gradient(circle at 20% 30%, ' + hexToRgba(t.accent || '#dc3c28', 0.035) + ' 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(212,160,60,0.025) 0%, transparent 50%)';
     }
 
     // ── Build a fully standalone HTML timeline from a config ──
@@ -1330,14 +1380,14 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App />);
 fontsLink,
 '  <style>',
 '    * { box-sizing: border-box; }',
-'    html, body, #root { height: 100%; margin: 0; padding: 0; background: ' + (t.bg || '#0d0b08') + '; }',
+'    html, body, #root { height: 100%; margin: 0; padding: 0; background: ' + generatorBackground(t) + '; }',
 '    body { font-family: ' + cssFamily(t.fontBody || 'Inter', 'sans-serif') + '; color: ' + (t.fg || '#e6dcc8') + '; overflow: hidden; -webkit-font-smoothing: antialiased; }',
-'    body::before { content:""; position:fixed; inset:0; pointer-events:none; z-index:0; background-image: radial-gradient(circle at 20% 30%, ' + hexToRgba(t.accent || '#dc3c28', 0.035) + ' 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(212,160,60,0.025) 0%, transparent 50%); }',
+'    body::before { content:""; position:fixed; inset:0; pointer-events:none; z-index:0; background-image: ' + generatorAmbient(t) + '; }',
 rootRule,
 '    ::-webkit-scrollbar { width: 10px; height: 10px; }',
 '    ::-webkit-scrollbar-track { background: transparent; }',
-'    ::-webkit-scrollbar-thumb { background: rgba(230,220,200,0.12); }',
-'    ::-webkit-scrollbar-thumb:hover { background: rgba(230,220,200,0.25); }',
+'    ::-webkit-scrollbar-thumb { background: ' + (t.preset === 'wavestone' ? '#D1CAF2' : 'rgba(230,220,200,0.12)') + '; border-radius: ' + (t.preset === 'wavestone' ? '999px' : '0') + '; }',
+'    ::-webkit-scrollbar-thumb:hover { background: ' + (t.preset === 'wavestone' ? '#A18FE3' : 'rgba(230,220,200,0.25)') + '; }',
 '    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.4;transform:scale(0.85);} }',
 '    button { font-family: inherit; }',
 '  </style>',
@@ -1444,14 +1494,14 @@ RENDERER_SRC,
         fontsBlock,
         '  <style>',
         '    * { box-sizing: border-box; }',
-        '    html, body, #root { height: 100%; margin: 0; padding: 0; background: ' + (t.bg || '#0d0b08') + '; }',
+        '    html, body, #root { height: 100%; margin: 0; padding: 0; background: ' + generatorBackground(t) + '; }',
         '    body { font-family: ' + cssFamily(t.fontBody || 'Inter', 'sans-serif') + '; color: ' + (t.fg || '#e6dcc8') + '; overflow: hidden; -webkit-font-smoothing: antialiased; }',
-        '    body::before { content:""; position:fixed; inset:0; pointer-events:none; z-index:0; background-image: radial-gradient(circle at 20% 30%, ' + hexToRgba(t.accent || '#dc3c28', 0.035) + ' 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(212,160,60,0.025) 0%, transparent 50%); }',
+        '    body::before { content:""; position:fixed; inset:0; pointer-events:none; z-index:0; background-image: ' + generatorAmbient(t) + '; }',
         rootRule,
         '    ::-webkit-scrollbar { width: 10px; height: 10px; }',
         '    ::-webkit-scrollbar-track { background: transparent; }',
-        '    ::-webkit-scrollbar-thumb { background: rgba(230,220,200,0.12); }',
-        '    ::-webkit-scrollbar-thumb:hover { background: rgba(230,220,200,0.25); }',
+        '    ::-webkit-scrollbar-thumb { background: ' + (t.preset === 'wavestone' ? '#D1CAF2' : 'rgba(230,220,200,0.12)') + '; border-radius: ' + (t.preset === 'wavestone' ? '999px' : '0') + '; }',
+        '    ::-webkit-scrollbar-thumb:hover { background: ' + (t.preset === 'wavestone' ? '#A18FE3' : 'rgba(230,220,200,0.25)') + '; }',
         '    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.4;transform:scale(0.85);} }',
         '    button { font-family: inherit; }',
         '  </style>',
@@ -1491,6 +1541,7 @@ RENDERER_SRC,
 
     function syncControls() {
       const m = config.meta, th = config.theme, ly = config.layout;
+      $('theme-preset').value = th.preset === 'wavestone' ? 'wavestone' : 'cyber-dark';
       $('m-title').value = m.title || '';
       $('m-sub').value = m.subtitle || '';
       $('m-badge').value = m.badge || '';
@@ -1539,7 +1590,21 @@ RENDERER_SRC,
       renderPreview();
     }
 
+    function applyThemePreset(name) {
+      const preset = THEME_PRESETS[name] || THEME_PRESETS['cyber-dark'];
+      const scale = config.theme && config.theme.scale;
+      config.theme = Object.assign({}, config.theme || {}, preset);
+      delete config.theme.phaseColors;
+      if (typeof scale === 'number') config.theme.scale = scale;
+      (config.phases || []).forEach((phase, i) => {
+        phase.color = preset.phaseColors[i % preset.phaseColors.length];
+      });
+      syncControls();
+      renderPreview();
+    }
+
     // ── Wire up controls ──
+    $('theme-preset').addEventListener('change', e => applyThemePreset(e.target.value));
     $('m-title').addEventListener('input', e => { config.meta.title = e.target.value; pushJson(); renderPreview(); });
     $('m-sub').addEventListener('input', e => { config.meta.subtitle = e.target.value; pushJson(); renderPreview(); });
     $('m-badge').addEventListener('input', e => { config.meta.badge = e.target.value; pushJson(); renderPreview(); });
