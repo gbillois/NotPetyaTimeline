@@ -123,6 +123,18 @@
       background: none; border: 1px solid rgba(230,220,200,0.2);
       border-radius: 3px; cursor: pointer;
     }
+    select {
+      width: 100%;
+      padding: 7px 9px;
+      background: rgba(230,220,200,0.05);
+      border: 1px solid rgba(230,220,200,0.16);
+      color: #f6f1e4;
+      font-family: 'Inter', sans-serif;
+      font-size: 12.5px;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    select option { background: #14110d; color: #f6f1e4; }
     input[type="checkbox"] { width: 15px; height: 15px; accent-color: #dc3c28; cursor: pointer; }
     .color-row .swatch-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: rgba(230,220,200,0.5); width: 64px; }
     textarea {
@@ -198,10 +210,19 @@
         <div class="text-row"><label for="m-title">Titre</label><input type="text" id="m-title"></div>
         <div class="text-row"><label for="m-sub">Sous-titre</label><input type="text" id="m-sub"></div>
         <div class="text-row"><label for="m-badge">Badge</label><input type="text" id="m-badge"></div>
-        <div class="color-row"><span class="swatch-label">Fond</span><input type="color" id="c-bg"><label></label></div>
-        <div class="color-row"><span class="swatch-label">Texte</span><input type="color" id="c-fg"><label></label></div>
-        <div class="color-row"><span class="swatch-label">Accent</span><input type="color" id="c-accent"><label></label></div>
+        <div class="color-row"><span class="swatch-label">Fond</span><input type="color" id="c-bg"><label>Arrière-plan</label></div>
+        <div class="color-row"><span class="swatch-label">Texte</span><input type="color" id="c-fg"><label>Corps de texte</label></div>
+        <div class="color-row"><span class="swatch-label">Titres</span><input type="color" id="c-ink"><label>Encre (titres)</label></div>
+        <div class="color-row"><span class="swatch-label">Accent</span><input type="color" id="c-accent"><label>Accent</label></div>
+        <div class="color-row"><span class="swatch-label">Panneaux</span><input type="color" id="c-panel"><label>Bandeaux</label></div>
         <div id="phase-colors"></div>
+      </div>
+
+      <div class="group">
+        <div class="label"><span class="dot"></span>Typographie</div>
+        <div class="text-row"><label for="f-title">Police des titres</label><select id="f-title"></select></div>
+        <div class="text-row"><label for="f-body">Police du corps</label><select id="f-body"></select></div>
+        <div class="text-row"><label for="f-mono">Police mono</label><select id="f-mono"></select></div>
       </div>
 
       <div class="group">
@@ -248,10 +269,17 @@ const KIND_LABELS = CFG.kindLabels || {};
 const C = {
   bg:     THEME.bg     || '#0d0b08',
   fg:     THEME.fg     || '#e6dcc8',
+  ink:    THEME.ink    || C.ink,
   accent: THEME.accent || '#dc3c28',
   panel:  THEME.panel  || '#0a0907',
   line:   THEME.line   || 'rgba(230,220,200,0.12)',
   muted:  THEME.muted  || 'rgba(230,220,200,0.55)',
+};
+// ── Typography tokens (configurable font families) ──
+const F = {
+  title: (THEME.fontTitle || 'Fraunces') + ", 'Times New Roman', serif",
+  body:  (THEME.fontBody  || 'Inter') + ", sans-serif",
+  mono:  (THEME.fontMono  || 'JetBrains Mono') + ", monospace",
 };
 
 // ── Layout blocks (toggle-able presence) ──
@@ -458,7 +486,7 @@ const TimelineTrack = ({ events, phases, currentTime, setCurrentTime, activeId, 
       <div style={{ position:'relative', height:18, marginBottom:4 }}>
         {phases.map(p => (
           <div key={p.id} style={{ position:'absolute', left:`${p.start*100}%`, width:`${(p.end-p.start)*100}%`, top:0, paddingLeft:8,
-            fontFamily:"'JetBrains Mono', monospace", fontSize:9, letterSpacing:'0.14em', textTransform:'uppercase',
+            fontFamily:F.mono, fontSize:9, letterSpacing:'0.14em', textTransform:'uppercase',
             color: phaseColor(p.id), fontWeight:700, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
             <span>{p.label}</span>
             {p.range && <span style={{ opacity:0.55, marginLeft:8, fontWeight:500 }}>{p.range}</span>}
@@ -466,7 +494,7 @@ const TimelineTrack = ({ events, phases, currentTime, setCurrentTime, activeId, 
         ))}
       </div>
       {/* Ticks */}
-      <div style={{ position:'relative', height:16, marginBottom:6, fontFamily:"'JetBrains Mono', monospace", fontSize:9.5, color:'rgba(230,220,200,0.45)', letterSpacing:'0.08em' }}>
+      <div style={{ position:'relative', height:16, marginBottom:6, fontFamily:F.mono, fontSize:9.5, color:'rgba(230,220,200,0.45)', letterSpacing:'0.08em' }}>
         {ticks.map((tick, i) => (
           <div key={i} style={{ position:'absolute', left:`${tick.t*100}%`,
             transform: tick.t >= 0.999 ? 'translateX(-100%)' : tick.t <= 0.001 ? 'translateX(0)' : 'translateX(-50%)', whiteSpace:'nowrap' }}>
@@ -497,8 +525,8 @@ const TimelineTrack = ({ events, phases, currentTime, setCurrentTime, activeId, 
             </div>
           );
         })}
-        <div style={{ position:'absolute', left:`${currentTime*100}%`, top:0, bottom:0, width:2, transform:'translateX(-50%)', background:'#f6f1e4', pointerEvents:'none', boxShadow:'0 0 12px rgba(246,241,228,0.6)' }}>
-          <div style={{ position:'absolute', top:-4, left:'50%', transform:'translateX(-50%)', width:10, height:10, background:'#f6f1e4', clipPath:'polygon(0 0, 100% 0, 50% 100%)' }} />
+        <div style={{ position:'absolute', left:`${currentTime*100}%`, top:0, bottom:0, width:2, transform:'translateX(-50%)', background:C.ink, pointerEvents:'none', boxShadow:'0 0 12px rgba(246,241,228,0.6)' }}>
+          <div style={{ position:'absolute', top:-4, left:'50%', transform:'translateX(-50%)', width:10, height:10, background:C.ink, clipPath:'polygon(0 0, 100% 0, 50% 100%)' }} />
         </div>
         {hoverT !== null && !dragging && (
           <div style={{ position:'absolute', left:`${hoverT*100}%`, top:0, bottom:0, width:1, transform:'translateX(-50%)', background:'rgba(246,241,228,0.3)', pointerEvents:'none' }} />
@@ -511,41 +539,41 @@ const TimelineTrack = ({ events, phases, currentTime, setCurrentTime, activeId, 
 // ═══════════════════════ DETAIL + LIST ═══════════════════════
 const MetaRow = ({ label, value, highlight }) => (
   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', gap:16, padding:'6px 0', borderBottom:'1px dashed rgba(230,220,200,0.1)' }}>
-    <span style={{ fontFamily:"'JetBrains Mono', monospace", fontSize:10, letterSpacing:'0.14em', textTransform:'uppercase', color:'rgba(230,220,200,0.5)' }}>{label}</span>
-    <span style={{ fontFamily:"'JetBrains Mono', monospace", fontSize:13, color: highlight || '#f6f1e4', fontWeight:600, textAlign:'right' }}>{value}</span>
+    <span style={{ fontFamily:F.mono, fontSize:10, letterSpacing:'0.14em', textTransform:'uppercase', color:'rgba(230,220,200,0.5)' }}>{label}</span>
+    <span style={{ fontFamily:F.mono, fontSize:13, color: highlight || C.ink, fontWeight:600, textAlign:'right' }}>{value}</span>
   </div>
 );
 
 const SEV_LABELS = ['','LOW','MODERATE','HIGH','SEVERE','CRITICAL'];
 const EventDetail = ({ event }) => {
   if (!event) return (
-    <div style={{ padding:24, color:'rgba(230,220,200,0.4)', fontFamily:"'JetBrains Mono', monospace", fontSize:12, letterSpacing:'0.04em' }}>
+    <div style={{ padding:24, color:'rgba(230,220,200,0.4)', fontFamily:F.mono, fontSize:12, letterSpacing:'0.04em' }}>
       Scrub the timeline or click an event to inspect the record.
     </div>
   );
   const color = phaseColor(event.phase);
   return (
-    <div style={{ padding:'28px 32px 36px', fontFamily:"'Inter', sans-serif", color: C.fg, position:'relative', overflowY:'auto', height:'100%', boxSizing:'border-box' }}>
-      <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:20, fontFamily:"'JetBrains Mono', monospace", fontSize:10, letterSpacing:'0.16em', textTransform:'uppercase' }}>
+    <div style={{ padding:'28px 32px 36px', fontFamily:F.body, color: C.fg, position:'relative', overflowY:'auto', height:'100%', boxSizing:'border-box' }}>
+      <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:20, fontFamily:F.mono, fontSize:10, letterSpacing:'0.16em', textTransform:'uppercase' }}>
         {event.phase && <span style={{ padding:'3px 8px', background:color, color:'#13110e', fontWeight:700 }}>{phaseLabel(event.phase)}</span>}
         {event.kind && <span style={{ color:'rgba(230,220,200,0.5)' }}>{kindLabel(event.kind)}</span>}
         <span style={{ color:'rgba(230,220,200,0.4)', marginLeft:'auto', fontSize:10 }}>FILE #{String(event.id).toUpperCase()}</span>
       </div>
       {(event.dateLabel || event.location) && (
-        <div style={{ fontFamily:"'JetBrains Mono', monospace", fontSize:11, color:'rgba(230,220,200,0.55)', letterSpacing:'0.08em', marginBottom:6 }}>
+        <div style={{ fontFamily:F.mono, fontSize:11, color:'rgba(230,220,200,0.55)', letterSpacing:'0.08em', marginBottom:6 }}>
           {[event.dateLabel, event.location].filter(Boolean).join(' · ').toUpperCase()}
         </div>
       )}
-      <h2 style={{ margin:'0 0 18px 0', fontFamily:"'Fraunces','Times New Roman',serif", fontSize:34, fontWeight:500, lineHeight:1.08, letterSpacing:'-0.01em', color:'#f6f1e4' }}>{event.title}</h2>
+      <h2 style={{ margin:'0 0 18px 0', fontFamily:F.title, fontSize:34, fontWeight:500, lineHeight:1.08, letterSpacing:'-0.01em', color:C.ink }}>{event.title}</h2>
       {showSeverity && event.severity && (
-        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:20, fontFamily:"'JetBrains Mono', monospace", fontSize:10, letterSpacing:'0.1em', color:'rgba(230,220,200,0.6)' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:20, fontFamily:F.mono, fontSize:10, letterSpacing:'0.1em', color:'rgba(230,220,200,0.6)' }}>
           <span>SEVERITY</span>
           <div style={{ display:'flex', gap:3 }}>{[1,2,3,4,5].map(i => <div key={i} style={{ width:14, height:6, background: i<=event.severity?color:'rgba(230,220,200,0.12)' }} />)}</div>
           <span style={{ color:'rgba(230,220,200,0.4)', marginLeft:8 }}>{SEV_LABELS[event.severity]}</span>
         </div>
       )}
       {event.headline && (
-        <div style={{ borderLeft:`2px solid ${color}`, paddingLeft:16, marginBottom:22, fontFamily:"'Fraunces',serif", fontSize:17, lineHeight:1.45, color:C.fg, fontStyle:'italic' }}>{event.headline}</div>
+        <div style={{ borderLeft:`2px solid ${color}`, paddingLeft:16, marginBottom:22, fontFamily:F.title, fontSize:17, lineHeight:1.45, color:C.fg, fontStyle:'italic' }}>{event.headline}</div>
       )}
       {event.body && <div style={{ fontSize:14.5, lineHeight:1.65, color:'rgba(230,220,200,0.88)', marginBottom:22 }}>{event.body}</div>}
       {(event.casualties || event.damageUSD || (showArtifacts && event.artifacts && event.artifacts.length)) && (
@@ -554,10 +582,10 @@ const EventDetail = ({ event }) => {
           {event.damageUSD && <MetaRow label="Damage" value={event.damageUSD} highlight={color} />}
           {showArtifacts && event.artifacts && event.artifacts.length > 0 && (
             <div>
-              <div style={{ fontFamily:"'JetBrains Mono', monospace", fontSize:10, letterSpacing:'0.14em', textTransform:'uppercase', color:'rgba(230,220,200,0.45)', marginBottom:8 }}>Artifacts</div>
+              <div style={{ fontFamily:F.mono, fontSize:10, letterSpacing:'0.14em', textTransform:'uppercase', color:'rgba(230,220,200,0.45)', marginBottom:8 }}>Artifacts</div>
               <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
                 {event.artifacts.map((a, i) => (
-                  <span key={i} style={{ fontFamily:"'JetBrains Mono', monospace", fontSize:11, padding:'3px 8px', background:'rgba(230,220,200,0.06)', border:'1px solid rgba(230,220,200,0.14)', color:C.fg }}>{a}</span>
+                  <span key={i} style={{ fontFamily:F.mono, fontSize:11, padding:'3px 8px', background:'rgba(230,220,200,0.06)', border:'1px solid rgba(230,220,200,0.14)', color:C.fg }}>{a}</span>
                 ))}
               </div>
             </div>
@@ -580,7 +608,7 @@ const EventList = ({ events, activeId, onSelect, currentTime }) => {
   }, [activeId]);
   return (
     <div ref={listRef} style={{ height:'100%', overflowY:'auto', padding:'16px 0' }}>
-      <div style={{ padding:'0 20px 12px', fontFamily:"'JetBrains Mono', monospace", fontSize:10, letterSpacing:'0.18em', textTransform:'uppercase', color:'rgba(230,220,200,0.4)' }}>
+      <div style={{ padding:'0 20px 12px', fontFamily:F.mono, fontSize:10, letterSpacing:'0.18em', textTransform:'uppercase', color:'rgba(230,220,200,0.4)' }}>
         Chronology · {events.length} records
       </div>
       {events.map(evt => {
@@ -591,12 +619,12 @@ const EventList = ({ events, activeId, onSelect, currentTime }) => {
               background: active?'rgba(230,220,200,0.05)':'transparent', cursor:'pointer', transition:'background 150ms', display:'flex', gap:10, alignItems:'flex-start' }}
             onMouseEnter={(e)=>{ if(!active) e.currentTarget.style.background='rgba(230,220,200,0.03)'; }}
             onMouseLeave={(e)=>{ if(!active) e.currentTarget.style.background='transparent'; }}>
-            <div style={{ fontFamily:"'JetBrains Mono', monospace", fontSize:9, letterSpacing:'0.08em', color: fired?'rgba(230,220,200,0.55)':'rgba(230,220,200,0.25)', width:54, flexShrink:0, paddingTop:2, lineHeight:1.4 }}>
+            <div style={{ fontFamily:F.mono, fontSize:9, letterSpacing:'0.08em', color: fired?'rgba(230,220,200,0.55)':'rgba(230,220,200,0.25)', width:54, flexShrink:0, paddingTop:2, lineHeight:1.4 }}>
               {shortDate(evt.dateLabel)}
             </div>
             <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ fontFamily:"'Inter', sans-serif", fontSize:12.5, fontWeight: active?600:500, color: active?'#f6f1e4':fired?C.fg:'rgba(230,220,200,0.45)', lineHeight:1.3 }}>{evt.title}</div>
-              {evt.kind && <div style={{ fontFamily:"'JetBrains Mono', monospace", fontSize:9, color: color+'bb', letterSpacing:'0.12em', marginTop:3, textTransform:'uppercase' }}>{kindLabel(evt.kind)}</div>}
+              <div style={{ fontFamily:F.body, fontSize:12.5, fontWeight: active?600:500, color: active?C.ink:fired?C.fg:'rgba(230,220,200,0.45)', lineHeight:1.3 }}>{evt.title}</div>
+              {evt.kind && <div style={{ fontFamily:F.mono, fontSize:9, color: color+'bb', letterSpacing:'0.12em', marginTop:3, textTransform:'uppercase' }}>{kindLabel(evt.kind)}</div>}
             </div>
           </div>
         );
@@ -608,22 +636,22 @@ const EventList = ({ events, activeId, onSelect, currentTime }) => {
 // ═══════════════════════ CHROME ═══════════════════════
 const Stat = ({ label, value, accent, mono }) => (
   <div style={{ display:'flex', flexDirection:'column', gap:2, minWidth:0 }}>
-    <span style={{ fontFamily:"'JetBrains Mono', monospace", fontSize:9, letterSpacing:'0.14em', textTransform:'uppercase', color:'rgba(230,220,200,0.45)' }}>{label}</span>
-    <span style={{ fontFamily: mono!==false?"'JetBrains Mono', monospace":"'Inter', sans-serif", fontSize:13, fontWeight:600, color: accent?C.accent:'#f6f1e4', fontVariantNumeric:'tabular-nums' }}>{value}</span>
+    <span style={{ fontFamily:F.mono, fontSize:9, letterSpacing:'0.14em', textTransform:'uppercase', color:'rgba(230,220,200,0.45)' }}>{label}</span>
+    <span style={{ fontFamily: mono!==false?F.mono:F.body, fontSize:13, fontWeight:600, color: accent?C.accent:C.ink, fontVariantNumeric:'tabular-nums' }}>{value}</span>
   </div>
 );
 const LegendDot = ({ color, label }) => (
   <div style={{ display:'flex', alignItems:'center', gap:6 }}><div style={{ width:8, height:8, borderRadius:'50%', background:color }} /><span>{label}</span></div>
 );
 const PlayButton = ({ playing, onClick }) => (
-  <button onClick={onClick} style={{ width:40, height:40, background: playing?'rgba(230,220,200,0.1)':C.accent, border:'1px solid rgba(230,220,200,0.2)', color: playing?'#f6f1e4':'#0a0907', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', borderRadius:2 }} title={playing?'Pause (space)':'Play (space)'}>
+  <button onClick={onClick} style={{ width:40, height:40, background: playing?'rgba(230,220,200,0.1)':C.accent, border:'1px solid rgba(230,220,200,0.2)', color: playing?C.ink:'#0a0907', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', borderRadius:2 }} title={playing?'Pause (space)':'Play (space)'}>
     {playing ? <svg width="12" height="14" viewBox="0 0 14 16"><rect x="1" y="0" width="4" height="16" fill="currentColor"/><rect x="9" y="0" width="4" height="16" fill="currentColor"/></svg>
              : <svg width="12" height="14" viewBox="0 0 14 16"><path d="M1 0 L13 8 L1 16 Z" fill="currentColor"/></svg>}
   </button>
 );
-const ctrlBtnStyle = { width:34, height:34, background:'rgba(230,220,200,0.04)', border:'1px solid rgba(230,220,200,0.14)', color:'rgba(230,220,200,0.7)', cursor:'pointer', fontSize:14, fontFamily:"'JetBrains Mono', monospace", borderRadius:2 };
+const ctrlBtnStyle = { width:34, height:34, background:'rgba(230,220,200,0.04)', border:'1px solid rgba(230,220,200,0.14)', color:'rgba(230,220,200,0.7)', cursor:'pointer', fontSize:14, fontFamily:F.mono, borderRadius:2 };
 const SpeedControl = ({ speed, setSpeed }) => (
-  <div style={{ display:'flex', gap:1, fontFamily:"'JetBrains Mono', monospace", fontSize:10 }}>
+  <div style={{ display:'flex', gap:1, fontFamily:F.mono, fontSize:10 }}>
     {[1,2,4,8].map(s => (
       <button key={s} onClick={() => setSpeed(s)} style={{ padding:'8px 10px', background: speed===s?'#e6dcc8':'rgba(230,220,200,0.04)', color: speed===s?'#0a0907':'rgba(230,220,200,0.7)', border:'1px solid rgba(230,220,200,0.14)', cursor:'pointer', fontWeight: speed===s?700:500 }}>{s}×</button>
     ))}
@@ -691,14 +719,14 @@ const App = () => {
   const gridCols = [showList ? `${leftW}px` : null, '1fr', showMap ? `${rightW}px` : null].filter(Boolean).join(' ');
 
   return (
-    <div style={{ height:'100vh', width:'100vw', display:'grid', gridTemplateRows:'auto 36vh 1fr', gridTemplateColumns: gridCols, background:C.bg, color:C.fg, fontFamily:"'Inter', sans-serif", overflow:'hidden' }}>
+    <div style={{ height:'100vh', width:'100vw', display:'grid', gridTemplateRows:'auto 36vh 1fr', gridTemplateColumns: gridCols, background:C.bg, color:C.fg, fontFamily:F.body, overflow:'hidden' }}>
       {/* Header */}
       <header style={{ gridColumn:'1 / -1', borderBottom:`1px solid ${C.line}`, padding:'14px 28px 12px', display:'flex', alignItems:'center', gap:20, background:C.panel, flexWrap:'wrap' }}>
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
           <div style={{ width:10, height:10, background:C.accent, borderRadius:1, animation:'pulse 1.6s infinite' }} />
-          {META.badge && <div style={{ fontFamily:"'JetBrains Mono', monospace", fontSize:10, letterSpacing:'0.2em', color:'rgba(230,220,200,0.55)', textTransform:'uppercase' }}>{META.badge}</div>}
+          {META.badge && <div style={{ fontFamily:F.mono, fontSize:10, letterSpacing:'0.2em', color:'rgba(230,220,200,0.55)', textTransform:'uppercase' }}>{META.badge}</div>}
         </div>
-        <div style={{ fontFamily:"'Fraunces', serif", fontSize:22, fontWeight:500, letterSpacing:'-0.01em', color:'#f6f1e4' }}>
+        <div style={{ fontFamily:F.title, fontSize:22, fontWeight:500, letterSpacing:'-0.01em', color:C.ink }}>
           {META.title || 'Timeline'}{META.subtitle && <span style={{ color:'rgba(230,220,200,0.4)', fontStyle:'italic', fontWeight:400 }}> {META.subtitle}</span>}
         </div>
         <div style={{ marginLeft:'auto', display:'flex', gap:24, alignItems:'center', flexWrap:'wrap' }}>
@@ -712,12 +740,12 @@ const App = () => {
       <section style={{ gridColumn:'1 / -1', gridRow:'2 / 3', background:`linear-gradient(180deg, ${C.panel} 0%, ${C.bg} 100%)`, borderBottom:`1px solid ${C.line}`, padding:'22px 40px 24px', display:'flex', flexDirection:'column', gap:14, overflow:'hidden' }}>
         <div style={{ display:'flex', alignItems:'center', gap:16, flexWrap:'wrap' }}>
           {currentPhase.label && (
-            <span style={{ padding:'4px 12px', background: phaseColor(currentPhase.id), color:'#0a0907', fontFamily:"'JetBrains Mono', monospace", fontWeight:700, letterSpacing:'0.18em', textTransform:'uppercase', fontSize:10 }}>
+            <span style={{ padding:'4px 12px', background: phaseColor(currentPhase.id), color:'#0a0907', fontFamily:F.mono, fontWeight:700, letterSpacing:'0.18em', textTransform:'uppercase', fontSize:10 }}>
               ▸ PHASE · {phaseLabel(currentPhase.id)}
             </span>
           )}
-          {currentPhase.range && <span style={{ fontFamily:"'JetBrains Mono', monospace", fontSize:11, letterSpacing:'0.1em', color:'rgba(230,220,200,0.6)' }}>{currentPhase.range}</span>}
-          {active && <span style={{ marginLeft:10, fontFamily:"'Fraunces', serif", fontSize:15, fontStyle:'italic', color:'rgba(230,220,200,0.72)' }}>
+          {currentPhase.range && <span style={{ fontFamily:F.mono, fontSize:11, letterSpacing:'0.1em', color:'rgba(230,220,200,0.6)' }}>{currentPhase.range}</span>}
+          {active && <span style={{ marginLeft:10, fontFamily:F.title, fontSize:15, fontStyle:'italic', color:'rgba(230,220,200,0.72)' }}>
             <span style={{ color:'rgba(230,220,200,0.4)' }}>viewing · </span>{active.dateLabel}</span>}
           {showPlayback && (
             <div style={{ marginLeft:'auto', display:'flex', gap:10, alignItems:'center' }}>
@@ -732,7 +760,7 @@ const App = () => {
             <TimelineTrack events={events} phases={phases} currentTime={currentTime} setCurrentTime={setCurrentTime} activeId={activeId} setActiveId={setActiveId} setPlaying={setPlaying} />
           </div>
         </div>
-        <div style={{ fontFamily:"'JetBrains Mono', monospace", fontSize:9.5, letterSpacing:'0.14em', color:'rgba(230,220,200,0.38)', textTransform:'uppercase', textAlign:'center' }}>
+        <div style={{ fontFamily:F.mono, fontSize:9.5, letterSpacing:'0.14em', color:'rgba(230,220,200,0.38)', textTransform:'uppercase', textAlign:'center' }}>
           ← → step events &nbsp;·&nbsp; {showPlayback ? 'space play/pause · ' : ''}drag track to scrub &nbsp;·&nbsp; click pins to jump
         </div>
       </section>
@@ -748,13 +776,13 @@ const App = () => {
       </main>
       {showMap && (
         <section style={{ gridRow:'3 / 4', gridColumn: String(mapCol), padding:'20px 24px 22px', display:'flex', flexDirection:'column', gap:12, overflow:'hidden', minWidth:0, minHeight:0, background:'radial-gradient(ellipse at center, rgba(20,18,15,0.8) 0%, rgba(10,9,7,1) 70%)' }}>
-          <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', fontFamily:"'JetBrains Mono', monospace", fontSize:9.5, letterSpacing:'0.18em', textTransform:'uppercase', color:'rgba(230,220,200,0.55)' }}>
+          <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', fontFamily:F.mono, fontSize:9.5, letterSpacing:'0.18em', textTransform:'uppercase', color:'rgba(230,220,200,0.55)' }}>
             <span>Incident Globe</span>{active && active.location && <span style={{ color:'rgba(230,220,200,0.4)' }}>{String(active.location).split(',')[0]}</span>}
           </div>
           <div style={{ flex:1, minHeight:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
             <Globe events={events} currentTime={currentTime} activeEvent={active} />
           </div>
-          <div style={{ display:'flex', gap:16, justifyContent:'center', flexWrap:'wrap', fontFamily:"'JetBrains Mono', monospace", fontSize:9.5, letterSpacing:'0.14em', textTransform:'uppercase', color:'rgba(230,220,200,0.5)' }}>
+          <div style={{ display:'flex', gap:16, justifyContent:'center', flexWrap:'wrap', fontFamily:F.mono, fontSize:9.5, letterSpacing:'0.14em', textTransform:'uppercase', color:'rgba(230,220,200,0.5)' }}>
             {phases.map(p => <LegendDot key={p.id} color={phaseColor(p.id)} label={phaseLabel(p.id)} />)}
           </div>
         </section>
@@ -820,13 +848,34 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App />);
     const RENDERER_SRC = $('tpl-renderer').textContent;
     const DEFAULT_PHASE_COLORS = ['#d4a03c','#dc3c28','#b4afa5','#6c9b7d','#7d8bb0','#b07d9b'];
 
+    // Curated Google Fonts (any other family can be set via the JSON editor).
+    const FONTS = {
+      title: ['Fraunces', 'Playfair Display', 'Lora', 'Merriweather', 'Cormorant Garamond', 'Spectral', 'Inter'],
+      body:  ['Inter', 'Work Sans', 'Source Sans 3', 'Roboto', 'Open Sans', 'Lato', 'Nunito Sans'],
+      mono:  ['JetBrains Mono', 'IBM Plex Mono', 'Fira Code', 'Roboto Mono', 'Source Code Pro', 'Space Mono'],
+    };
+    function fillFontSelect(el, list, value) {
+      const opts = list.slice();
+      if (value && opts.indexOf(value) === -1) opts.unshift(value);
+      el.innerHTML = '';
+      opts.forEach(name => {
+        const o = document.createElement('option');
+        o.value = name; o.textContent = name;
+        if (name === value) o.selected = true;
+        el.appendChild(o);
+      });
+    }
+
     let config = normalizeConfig(DEFAULT_CONFIG);
 
     // ── Normalize: fill ids, derive event positions (t), derive phases ──
     function normalizeConfig(raw) {
       const cfg = JSON.parse(JSON.stringify(raw || {}));
       cfg.meta = cfg.meta || {};
-      cfg.theme = Object.assign({ bg: '#0d0b08', fg: '#e6dcc8', accent: '#dc3c28', panel: '#0a0907' }, cfg.theme || {});
+      cfg.theme = Object.assign({
+        bg: '#0d0b08', fg: '#e6dcc8', ink: '#f6f1e4', accent: '#dc3c28', panel: '#0a0907',
+        fontTitle: 'Fraunces', fontBody: 'Inter', fontMono: 'JetBrains Mono',
+      }, cfg.theme || {});
       cfg.layout = Object.assign({ showMap: true, showEventList: true, showSeverity: true, showArtifacts: true, showPlayback: true }, cfg.layout || {});
       let events = Array.isArray(cfg.events) ? cfg.events.slice() : [];
       events.forEach((e, i) => { if (!e.id) e.id = 'e' + String(i + 1).padStart(2, '0'); });
@@ -869,6 +918,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App />);
       const t = cfg.theme || {};
       const title = (cfg.meta && cfg.meta.title) || 'Timeline';
       const json = JSON.stringify(cfg).replace(/</g, '\\u003c').replace(/-->/g, '--\\u003e');
+      const fontsLink = fontsLinkFor(t);
       return [
 '<!DOCTYPE html>',
 '<html lang="' + ((cfg.meta && cfg.meta.lang) || 'en') + '">',
@@ -878,11 +928,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App />);
 '  <meta name="viewport" content="width=device-width, initial-scale=1">',
 '  <link rel="preconnect" href="https://fonts.googleapis.com">',
 '  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>',
-'  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">',
+fontsLink,
 '  <style>',
 '    * { box-sizing: border-box; }',
 '    html, body, #root { height: 100%; margin: 0; padding: 0; background: ' + (t.bg || '#0d0b08') + '; }',
-'    body { font-family: "Inter", sans-serif; color: ' + (t.fg || '#e6dcc8') + '; overflow: hidden; -webkit-font-smoothing: antialiased; }',
+'    body { font-family: ' + cssFamily(t.fontBody || 'Inter', 'sans-serif') + '; color: ' + (t.fg || '#e6dcc8') + '; overflow: hidden; -webkit-font-smoothing: antialiased; }',
 '    body::before { content:""; position:fixed; inset:0; pointer-events:none; z-index:0; background-image: radial-gradient(circle at 20% 30%, ' + hexToRgba(t.accent || '#dc3c28', 0.035) + ' 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(212,160,60,0.025) 0%, transparent 50%); }',
 '    #root { position: relative; z-index: 1; }',
 '    ::-webkit-scrollbar { width: 10px; height: 10px; }',
@@ -905,6 +955,23 @@ RENDERER_SRC,
 '</body>',
 '</html>',
       ].join('\n');
+    }
+
+    // Default trio is loaded via the original variable-font URL (true italics);
+    // any custom family is appended with a standard weight range.
+    const BASE_FONTS_URL = 'https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap';
+    const DEFAULT_FAMS = ['Fraunces', 'Inter', 'JetBrains Mono'];
+    function cssFamily(name, generic) { return '"' + String(name).replace(/"/g, '') + '", ' + generic; }
+    function fontsLinkFor(t) {
+      const want = [t.fontTitle || 'Fraunces', t.fontBody || 'Inter', t.fontMono || 'JetBrains Mono'];
+      const extra = [];
+      want.forEach(f => { if (f && DEFAULT_FAMS.indexOf(f) === -1 && extra.indexOf(f) === -1) extra.push(f); });
+      let link = '  <link href="' + BASE_FONTS_URL + '" rel="stylesheet">';
+      if (extra.length) {
+        const q = extra.map(f => 'family=' + encodeURIComponent(f).replace(/%20/g, '+') + ':ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,600').join('&');
+        link += '\n  <link href="https://fonts.googleapis.com/css2?' + q + '&display=swap" rel="stylesheet">';
+      }
+      return link;
     }
 
     function hexToRgba(hex, a) {
@@ -934,7 +1001,12 @@ RENDERER_SRC,
       $('m-badge').value = m.badge || '';
       $('c-bg').value = toHex(th.bg, '#0d0b08');
       $('c-fg').value = toHex(th.fg, '#e6dcc8');
+      $('c-ink').value = toHex(th.ink, '#f6f1e4');
       $('c-accent').value = toHex(th.accent, '#dc3c28');
+      $('c-panel').value = toHex(th.panel, '#0a0907');
+      fillFontSelect($('f-title'), FONTS.title, th.fontTitle || 'Fraunces');
+      fillFontSelect($('f-body'), FONTS.body, th.fontBody || 'Inter');
+      fillFontSelect($('f-mono'), FONTS.mono, th.fontMono || 'JetBrains Mono');
       $('t-map').checked = ly.showMap !== false;
       $('t-list').checked = ly.showEventList !== false;
       $('t-sev').checked = ly.showSeverity !== false;
@@ -967,7 +1039,12 @@ RENDERER_SRC,
     $('m-badge').addEventListener('input', e => { config.meta.badge = e.target.value; pushJson(); renderPreview(); });
     $('c-bg').addEventListener('input', e => { config.theme.bg = e.target.value; pushJson(); renderPreview(); });
     $('c-fg').addEventListener('input', e => { config.theme.fg = e.target.value; pushJson(); renderPreview(); });
+    $('c-ink').addEventListener('input', e => { config.theme.ink = e.target.value; pushJson(); renderPreview(); });
     $('c-accent').addEventListener('input', e => { config.theme.accent = e.target.value; pushJson(); renderPreview(); });
+    $('c-panel').addEventListener('input', e => { config.theme.panel = e.target.value; pushJson(); renderPreview(); });
+    $('f-title').addEventListener('change', e => { config.theme.fontTitle = e.target.value; pushJson(); renderPreview(); });
+    $('f-body').addEventListener('change', e => { config.theme.fontBody = e.target.value; pushJson(); renderPreview(); });
+    $('f-mono').addEventListener('change', e => { config.theme.fontMono = e.target.value; pushJson(); renderPreview(); });
     [['t-map','showMap'],['t-list','showEventList'],['t-sev','showSeverity'],['t-art','showArtifacts'],['t-play','showPlayback']].forEach(([id, key]) => {
       $(id).addEventListener('change', e => { config.layout[key] = e.target.checked; pushJson(); renderPreview(); });
     });

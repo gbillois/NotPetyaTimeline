@@ -23,7 +23,11 @@ A single JSON object:
 ```jsonc
 {
   "meta":   { "title": "…", "subtitle": "…", "badge": "…", "lang": "en" },
-  "theme":  { "bg": "#0d0b08", "fg": "#e6dcc8", "accent": "#dc3c28" },
+  "theme":  {
+    "bg": "#0d0b08", "fg": "#e6dcc8", "ink": "#f6f1e4",
+    "accent": "#dc3c28", "panel": "#0a0907",
+    "fontTitle": "Fraunces", "fontBody": "Inter", "fontMono": "JetBrains Mono"
+  },
   "layout": { "showMap": true, "showEventList": true, "showSeverity": true,
               "showArtifacts": true, "showPlayback": true },
   "phases": [ { "id": "prelude", "label": "…", "range": "…",
@@ -46,8 +50,16 @@ Only `events` is strictly required. The tool fills the rest in:
 
 ### Styling & blocks (built to extend)
 
-`theme` and `layout` are first-class config sections. Today they drive page
-colors, per-phase colors, and which blocks render (map/globe, chronology list,
-severity meter, artifacts, playback). The structure is intentionally open so
-new style knobs (fonts, density, alternate layouts) can be added without
-touching event data.
+`theme` and `layout` are first-class config sections, all editable live from the
+left panel:
+
+- **Colours** — `bg` (background), `fg` (body text), `ink` (titles/headings),
+  `accent`, `panel` (header/strip), plus a colour per phase.
+- **Fonts** — `fontTitle`, `fontBody`, `fontMono`. Any Google Font name works;
+  the generated file loads it automatically (the curated dropdowns cover common
+  choices, and the JSON editor accepts arbitrary families).
+- **Blocks** — `showMap`, `showEventList`, `showSeverity`, `showArtifacts`,
+  `showPlayback` toggle which parts of the timeline render.
+
+The structure is intentionally open so new style knobs (density, alternate
+layouts) can be added without touching event data.
