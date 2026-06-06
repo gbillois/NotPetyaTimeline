@@ -135,6 +135,10 @@
       cursor: pointer;
     }
     select option { background: #14110d; color: #f6f1e4; }
+    input[type="range"] { flex: 1; accent-color: #dc3c28; cursor: pointer; }
+    .range-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
+    .range-row .swatch-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: rgba(230,220,200,0.5); width: 64px; }
+    .range-row .val { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #d4a03c; width: 34px; text-align: right; }
     input[type="checkbox"] { width: 15px; height: 15px; accent-color: #dc3c28; cursor: pointer; }
     .color-row .swatch-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: rgba(230,220,200,0.5); width: 64px; }
     textarea {
@@ -215,6 +219,7 @@
         <div class="color-row"><span class="swatch-label">Titres</span><input type="color" id="c-ink"><label>Encre (titres)</label></div>
         <div class="color-row"><span class="swatch-label">Accent</span><input type="color" id="c-accent"><label>Accent</label></div>
         <div class="color-row"><span class="swatch-label">Panneaux</span><input type="color" id="c-panel"><label>Bandeaux</label></div>
+        <div class="color-row"><span class="swatch-label">Bordures</span><input type="color" id="c-line"><label>Lignes de séparation</label></div>
         <div id="phase-colors"></div>
       </div>
 
@@ -223,6 +228,14 @@
         <div class="text-row"><label for="f-title">Police des titres</label><select id="f-title"></select></div>
         <div class="text-row"><label for="f-body">Police du corps</label><select id="f-body"></select></div>
         <div class="text-row"><label for="f-mono">Police mono</label><select id="f-mono"></select></div>
+        <div class="range-row"><span class="swatch-label">Échelle</span><input type="range" id="s-scale" min="0.8" max="1.3" step="0.05"><span class="val" id="s-scale-val">1.0</span></div>
+      </div>
+
+      <div class="group">
+        <div class="label"><span class="dot"></span>Disposition</div>
+        <div class="text-row"><label for="l-mapside">Position de la carte</label>
+          <select id="l-mapside"><option value="right">À droite</option><option value="left">À gauche</option></select>
+        </div>
       </div>
 
       <div class="group">
@@ -714,12 +727,19 @@ const App = () => {
   const leftW = compact ? 220 : 280, rightW = compact ? 360 : 460;
   const currentPhase = phases.find(p => currentTime >= p.start && currentTime < p.end) || phases[phases.length-1] || {};
 
-  // Adaptive column layout based on present blocks
-  let col = 1; const listCol = showList ? col++ : null; const detailCol = col++; const mapCol = showMap ? col++ : null;
-  const gridCols = [showList ? `${leftW}px` : null, '1fr', showMap ? `${rightW}px` : null].filter(Boolean).join(' ');
+  // Adaptive column layout: present blocks + map side (alternate layouts)
+  const mapSide = LAYOUT.mapSide === 'left' ? 'left' : 'right';
+  const order = (mapSide === 'left' ? ['map','detail','list'] : ['list','detail','map'])
+    .filter(k => k === 'detail' || (k === 'list' && showList) || (k === 'map' && showMap));
+  const colOf = {}; order.forEach((k, i) => { colOf[k] = i + 1; });
+  const widthOf = { list: `${leftW}px`, detail: '1fr', map: `${rightW}px` };
+  const gridCols = order.map(k => widthOf[k]).join(' ');
+  const listCol = colOf.list, detailCol = colOf.detail, mapCol = colOf.map;
+  const sep = `1px solid ${C.line}`;
+  const edge = (selfCol, otherCol) => otherCol == null ? {} : (otherCol > selfCol ? { borderRight: sep } : { borderLeft: sep });
 
   return (
-    <div style={{ height:'100vh', width:'100vw', display:'grid', gridTemplateRows:'auto 36vh 1fr', gridTemplateColumns: gridCols, background:C.bg, color:C.fg, fontFamily:F.body, overflow:'hidden' }}>
+    <div style={{ height:'100%', width:'100%', display:'grid', gridTemplateRows:'auto 36vh 1fr', gridTemplateColumns: gridCols, background:C.bg, color:C.fg, fontFamily:F.body, overflow:'hidden' }}>
       {/* Header */}
       <header style={{ gridColumn:'1 / -1', borderBottom:`1px solid ${C.line}`, padding:'14px 28px 12px', display:'flex', alignItems:'center', gap:20, background:C.panel, flexWrap:'wrap' }}>
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
@@ -767,15 +787,15 @@ const App = () => {
 
       {/* Row 3 */}
       {showList && (
-        <aside style={{ gridRow:'3 / 4', gridColumn: String(listCol), borderRight:`1px solid ${C.line}`, overflow:'hidden', background:'rgba(10,9,7,0.6)', minHeight:0 }}>
+        <aside style={{ gridRow:'3 / 4', gridColumn: String(listCol), ...edge(listCol, detailCol), overflow:'hidden', background:'rgba(10,9,7,0.6)', minHeight:0 }}>
           <EventList events={events} activeId={activeId} onSelect={(e) => { setActiveId(e.id); setCurrentTime(e.t); setPlaying(false); }} currentTime={currentTime} />
         </aside>
       )}
-      <main style={{ gridRow:'3 / 4', gridColumn: String(detailCol), overflow:'hidden', background:'rgba(10,9,7,0.4)', minHeight:0, borderRight: showMap?`1px solid ${C.line}`:'none' }}>
+      <main style={{ gridRow:'3 / 4', gridColumn: String(detailCol), overflow:'hidden', background:'rgba(10,9,7,0.4)', minHeight:0, ...(mapSide==='right' ? edge(detailCol, mapCol) : edge(detailCol, listCol)) }}>
         <EventDetail event={active} />
       </main>
       {showMap && (
-        <section style={{ gridRow:'3 / 4', gridColumn: String(mapCol), padding:'20px 24px 22px', display:'flex', flexDirection:'column', gap:12, overflow:'hidden', minWidth:0, minHeight:0, background:'radial-gradient(ellipse at center, rgba(20,18,15,0.8) 0%, rgba(10,9,7,1) 70%)' }}>
+        <section style={{ gridRow:'3 / 4', gridColumn: String(mapCol), ...edge(mapCol, detailCol), padding:'20px 24px 22px', display:'flex', flexDirection:'column', gap:12, overflow:'hidden', minWidth:0, minHeight:0, background:'radial-gradient(ellipse at center, rgba(20,18,15,0.8) 0%, rgba(10,9,7,1) 70%)' }}>
           <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', fontFamily:F.mono, fontSize:9.5, letterSpacing:'0.18em', textTransform:'uppercase', color:'rgba(230,220,200,0.55)' }}>
             <span>Incident Globe</span>{active && active.location && <span style={{ color:'rgba(230,220,200,0.4)' }}>{String(active.location).split(',')[0]}</span>}
           </div>
@@ -874,9 +894,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App />);
       cfg.meta = cfg.meta || {};
       cfg.theme = Object.assign({
         bg: '#0d0b08', fg: '#e6dcc8', ink: '#f6f1e4', accent: '#dc3c28', panel: '#0a0907',
+        line: 'rgba(230,220,200,0.12)', scale: 1,
         fontTitle: 'Fraunces', fontBody: 'Inter', fontMono: 'JetBrains Mono',
       }, cfg.theme || {});
-      cfg.layout = Object.assign({ showMap: true, showEventList: true, showSeverity: true, showArtifacts: true, showPlayback: true }, cfg.layout || {});
+      cfg.layout = Object.assign({ showMap: true, showEventList: true, showSeverity: true, showArtifacts: true, showPlayback: true, mapSide: 'right' }, cfg.layout || {});
       let events = Array.isArray(cfg.events) ? cfg.events.slice() : [];
       events.forEach((e, i) => { if (!e.id) e.id = 'e' + String(i + 1).padStart(2, '0'); });
 
@@ -919,6 +940,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App />);
       const title = (cfg.meta && cfg.meta.title) || 'Timeline';
       const json = JSON.stringify(cfg).replace(/</g, '\\u003c').replace(/-->/g, '--\\u003e');
       const fontsLink = fontsLinkFor(t);
+      const sc = (typeof t.scale === 'number' && t.scale > 0) ? t.scale : 1;
+      const rootRule = sc === 1
+        ? '  #root { position: relative; z-index: 1; width: 100%; height: 100%; }'
+        : '  #root { position: relative; z-index: 1; transform-origin: 0 0; transform: scale(' + sc + '); width: calc(100% / ' + sc + '); height: calc(100% / ' + sc + '); }';
       return [
 '<!DOCTYPE html>',
 '<html lang="' + ((cfg.meta && cfg.meta.lang) || 'en') + '">',
@@ -934,7 +959,7 @@ fontsLink,
 '    html, body, #root { height: 100%; margin: 0; padding: 0; background: ' + (t.bg || '#0d0b08') + '; }',
 '    body { font-family: ' + cssFamily(t.fontBody || 'Inter', 'sans-serif') + '; color: ' + (t.fg || '#e6dcc8') + '; overflow: hidden; -webkit-font-smoothing: antialiased; }',
 '    body::before { content:""; position:fixed; inset:0; pointer-events:none; z-index:0; background-image: radial-gradient(circle at 20% 30%, ' + hexToRgba(t.accent || '#dc3c28', 0.035) + ' 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(212,160,60,0.025) 0%, transparent 50%); }',
-'    #root { position: relative; z-index: 1; }',
+rootRule,
 '    ::-webkit-scrollbar { width: 10px; height: 10px; }',
 '    ::-webkit-scrollbar-track { background: transparent; }',
 '    ::-webkit-scrollbar-thumb { background: rgba(230,220,200,0.12); }',
@@ -1004,9 +1029,13 @@ RENDERER_SRC,
       $('c-ink').value = toHex(th.ink, '#f6f1e4');
       $('c-accent').value = toHex(th.accent, '#dc3c28');
       $('c-panel').value = toHex(th.panel, '#0a0907');
+      $('c-line').value = toHex(th.line, '#2a2620');
       fillFontSelect($('f-title'), FONTS.title, th.fontTitle || 'Fraunces');
       fillFontSelect($('f-body'), FONTS.body, th.fontBody || 'Inter');
       fillFontSelect($('f-mono'), FONTS.mono, th.fontMono || 'JetBrains Mono');
+      const sc = (typeof th.scale === 'number' && th.scale > 0) ? th.scale : 1;
+      $('s-scale').value = sc; $('s-scale-val').textContent = sc.toFixed(2);
+      $('l-mapside').value = ly.mapSide === 'left' ? 'left' : 'right';
       $('t-map').checked = ly.showMap !== false;
       $('t-list').checked = ly.showEventList !== false;
       $('t-sev').checked = ly.showSeverity !== false;
@@ -1042,6 +1071,9 @@ RENDERER_SRC,
     $('c-ink').addEventListener('input', e => { config.theme.ink = e.target.value; pushJson(); renderPreview(); });
     $('c-accent').addEventListener('input', e => { config.theme.accent = e.target.value; pushJson(); renderPreview(); });
     $('c-panel').addEventListener('input', e => { config.theme.panel = e.target.value; pushJson(); renderPreview(); });
+    $('c-line').addEventListener('input', e => { config.theme.line = e.target.value; pushJson(); renderPreview(); });
+    $('s-scale').addEventListener('input', e => { const v = parseFloat(e.target.value); config.theme.scale = v; $('s-scale-val').textContent = v.toFixed(2); pushJson(); renderPreview(); });
+    $('l-mapside').addEventListener('change', e => { config.layout.mapSide = e.target.value; pushJson(); renderPreview(); });
     $('f-title').addEventListener('change', e => { config.theme.fontTitle = e.target.value; pushJson(); renderPreview(); });
     $('f-body').addEventListener('change', e => { config.theme.fontBody = e.target.value; pushJson(); renderPreview(); });
     $('f-mono').addEventListener('change', e => { config.theme.fontMono = e.target.value; pushJson(); renderPreview(); });
