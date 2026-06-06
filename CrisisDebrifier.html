@@ -233,6 +233,14 @@
 
       <div class="group">
         <div class="label"><span class="dot"></span>Disposition</div>
+        <div class="text-row"><label for="l-maptype">Type de carte</label>
+          <select id="l-maptype">
+            <option value="globe">Globe (monde)</option>
+            <option value="region">Région / pays (villes clés)</option>
+            <option value="none">Aucune carte</option>
+          </select>
+        </div>
+        <div class="text-row" id="row-bounds"><label for="l-bounds">Cadrage région — O, S, E, N (vide = auto)</label><input type="text" id="l-bounds" placeholder="ex : 22, 44, 41, 53"></div>
         <div class="text-row"><label for="l-mapside">Position de la carte</label>
           <select id="l-mapside"><option value="right">À droite</option><option value="left">À gauche</option></select>
         </div>
@@ -277,6 +285,7 @@ const LAYOUT = CFG.layout || {};
 const EVENTS = (CFG.events || []).slice().sort((a, b) => (a.t || 0) - (b.t || 0));
 const PHASES = CFG.phases || [];
 const KIND_LABELS = CFG.kindLabels || {};
+const MAP = CFG.map || {};
 
 // ── Theme tokens (working style knobs; extend here for future themes) ──
 const C = {
@@ -326,6 +335,42 @@ const hexToRgba = (hex, a) => {
 };
 const slug = (META.title || 'timeline').toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
+// ═══════════════════════ SHARED: coastline data ═══════════════════════
+// Fetch world-atlas land once and decode to [lat,lon] rings. Reused by both
+// the globe and the region (single-country) map so adding the second mode
+// costs almost nothing in payload.
+const useLand = () => {
+  const [land, setLand] = React.useState(null);
+  React.useEffect(() => {
+    let cancelled = false;
+    fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/land-110m.json')
+      .then(r => r.json())
+      .then(topo => {
+        if (cancelled) return;
+        const t = topo.transform, sx = t.scale[0], sy = t.scale[1], tx = t.translate[0], ty = t.translate[1];
+        const decodeArc = (arc) => { let x=0,y=0; return arc.map(([dx,dy]) => { x+=dx; y+=dy; return [x*sx+tx, y*sy+ty]; }); };
+        const arcs = topo.arcs.map(decodeArc);
+        const lineFromArcIdx = (idx) => { const rev = idx < 0; const arc = arcs[rev ? ~idx : idx]; return rev ? [...arc].reverse() : arc; };
+        const polys = [];
+        const addRing = (arcIdxs) => {
+          const ring = [];
+          arcIdxs.forEach((ai, i) => { const seg = lineFromArcIdx(ai); for (let k = i===0?0:1; k<seg.length; k++) ring.push([seg[k][1], seg[k][0]]); });
+          polys.push(ring);
+        };
+        const walk = (g) => {
+          if (g.type === 'Polygon') g.arcs.forEach(addRing);
+          else if (g.type === 'MultiPolygon') g.arcs.forEach(p => p.forEach(addRing));
+          else if (g.type === 'GeometryCollection') g.geometries.forEach(walk);
+        };
+        walk(topo.objects.land);
+        setLand(polys);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+  return land;
+};
+
 // ═══════════════════════ GLOBE ═══════════════════════
 const Globe = ({ events, currentTime, activeEvent }) => {
   const size = 460, cx = size/2, cy = size/2, R = size*0.46;
@@ -358,34 +403,7 @@ const Globe = ({ events, currentTime, activeEvent }) => {
     return [cx + x, cy - y, true];
   };
 
-  const [landmasses, setLandmasses] = React.useState(null);
-  React.useEffect(() => {
-    let cancelled = false;
-    fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/land-110m.json')
-      .then(r => r.json())
-      .then(topo => {
-        if (cancelled) return;
-        const t = topo.transform, sx = t.scale[0], sy = t.scale[1], tx = t.translate[0], ty = t.translate[1];
-        const decodeArc = (arc) => { let x=0,y=0; return arc.map(([dx,dy]) => { x+=dx; y+=dy; return [x*sx+tx, y*sy+ty]; }); };
-        const arcs = topo.arcs.map(decodeArc);
-        const lineFromArcIdx = (idx) => { const rev = idx < 0; const arc = arcs[rev ? ~idx : idx]; return rev ? [...arc].reverse() : arc; };
-        const polys = [];
-        const addRing = (arcIdxs) => {
-          const ring = [];
-          arcIdxs.forEach((ai, i) => { const seg = lineFromArcIdx(ai); for (let k = i===0?0:1; k<seg.length; k++) ring.push([seg[k][1], seg[k][0]]); });
-          polys.push(ring);
-        };
-        const walk = (g) => {
-          if (g.type === 'Polygon') g.arcs.forEach(addRing);
-          else if (g.type === 'MultiPolygon') g.arcs.forEach(p => p.forEach(addRing));
-          else if (g.type === 'GeometryCollection') g.geometries.forEach(walk);
-        };
-        walk(topo.objects.land);
-        setLandmasses(polys);
-      })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, []);
+  const landmasses = useLand();
 
   const firedEvents = events.filter(e => e.t <= currentTime && e.coords);
   return (
@@ -457,6 +475,91 @@ const Globe = ({ events, currentTime, activeEvent }) => {
     </div>
   );
 };
+
+// ═══════════════════════ REGION MAP (single country / area + cities) ═══════
+// 2D map cropped to a bounding box. If MAP.bounds is omitted it auto-fits to
+// the event coordinates, so "pick a country" can be as simple as choosing the
+// region mode when all your key cities live there. Event coords are the cities.
+const RegionMap = ({ events, currentTime, activeEvent }) => {
+  const land = useLand();
+  const W = 460, H = 460, PAD = 24;
+  const geo = events.filter(e => Array.isArray(e.coords));
+
+  let b = Array.isArray(MAP.bounds) && MAP.bounds.length === 4 ? MAP.bounds.slice() : null;
+  if (!b) {
+    if (geo.length) {
+      const lats = geo.map(e => e.coords[0]), lons = geo.map(e => e.coords[1]);
+      const padLat = Math.max(2, (Math.max.apply(null, lats) - Math.min.apply(null, lats)) * 0.18);
+      const padLon = Math.max(2, (Math.max.apply(null, lons) - Math.min.apply(null, lons)) * 0.18);
+      b = [Math.min.apply(null, lons) - padLon, Math.min.apply(null, lats) - padLat, Math.max.apply(null, lons) + padLon, Math.max.apply(null, lats) + padLat];
+    } else { b = [-180, -60, 180, 85]; }
+  }
+  const west = b[0], south = b[1], east = b[2], north = b[3];
+  const lonSpan = Math.max(0.0001, east - west), latSpan = Math.max(0.0001, north - south);
+  const s = Math.min((W - PAD*2) / lonSpan, (H - PAD*2) / latSpan);
+  const offX = (W - lonSpan*s) / 2, offY = (H - latSpan*s) / 2;
+  const project = (lat, lon) => [offX + (lon - west)*s, offY + (north - lat)*s];
+  const inBox = (lat, lon) => lon >= west-2 && lon <= east+2 && lat >= south-2 && lat <= north+2;
+
+  const firedEvents = events.filter(e => e.t <= currentTime && e.coords);
+  return (
+    <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center' }}>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ width:'100%', height:'100%', maxHeight:'100%' }}>
+        <defs>
+          <radialGradient id="rPulse"><stop offset="0%" stopColor={hexToRgba(C.accent,0.7)} /><stop offset="60%" stopColor={hexToRgba(C.accent,0.18)} /><stop offset="100%" stopColor={hexToRgba(C.accent,0)} /></radialGradient>
+          <clipPath id="rClip"><rect x="0" y="0" width={W} height={H} /></clipPath>
+        </defs>
+        <rect x="0" y="0" width={W} height={H} fill="#0a0907" />
+        {/* graticule */}
+        <g clipPath="url(#rClip)" stroke="rgba(230,220,200,0.06)" strokeWidth="0.6" fill="none">
+          {(() => {
+            const lines = [];
+            const stepLat = niceStep(latSpan), stepLon = niceStep(lonSpan);
+            for (let la = Math.ceil(south/stepLat)*stepLat; la <= north; la += stepLat) { const a = project(la, west), c = project(la, east); lines.push(<line key={`la${la}`} x1={a[0]} y1={a[1]} x2={c[0]} y2={c[1]} />); }
+            for (let lo = Math.ceil(west/stepLon)*stepLon; lo <= east; lo += stepLon) { const a = project(south, lo), c = project(north, lo); lines.push(<line key={`lo${lo}`} x1={a[0]} y1={a[1]} x2={c[0]} y2={c[1]} />); }
+            return lines;
+          })()}
+        </g>
+        {/* land */}
+        <g clipPath="url(#rClip)">
+          {(land || []).map((poly, i) => {
+            // skip polygons fully outside the viewport for performance
+            if (!poly.some(([la, lo]) => inBox(la, lo))) return null;
+            const pts = poly.map(([la, lo]) => { const p = project(la, lo); return `${p[0].toFixed(1)},${p[1].toFixed(1)}`; }).join(' ');
+            return <polyline key={i} points={pts} fill="rgba(230,220,200,0.10)" stroke="rgba(230,220,200,0.5)" strokeWidth="0.6" strokeLinejoin="round" />;
+          })}
+        </g>
+        <rect x="0" y="0" width={W} height={H} fill="none" stroke="rgba(230,220,200,0.18)" strokeWidth="1" />
+        {/* cities */}
+        <g clipPath="url(#rClip)">
+          {firedEvents.map(evt => {
+            const [x, y] = project(evt.coords[0], evt.coords[1]);
+            const age = currentTime - evt.t, ageScale = Math.max(0, 1 - age*2.5);
+            const baseR = 2.5 + (evt.severity || 1)*1.1, pulseR = baseR + ageScale*20;
+            const color = phaseColor(evt.phase), isActive = activeEvent && evt.id === activeEvent.id;
+            const cityLabel = String(evt.location || '').split(',')[0];
+            return (
+              <g key={evt.id}>
+                {ageScale > 0.02 && <circle cx={x} cy={y} r={pulseR} fill="url(#rPulse)" opacity={ageScale} />}
+                {isActive && (
+                  <circle cx={x} cy={y} r={baseR+8} fill="none" stroke={color} strokeWidth="1" opacity="0.6">
+                    <animate attributeName="r" from={baseR+4} to={baseR+18} dur="1.4s" repeatCount="indefinite" />
+                    <animate attributeName="opacity" from="0.7" to="0" dur="1.4s" repeatCount="indefinite" />
+                  </circle>
+                )}
+                <circle cx={x} cy={y} r={baseR} fill={color} stroke="#0a0907" strokeWidth="1" />
+                {(isActive || ageScale > 0.25) && cityLabel && (
+                  <text x={x + baseR + 4} y={y + 3} fill={isActive ? C.ink : 'rgba(230,220,200,0.6)'} fontFamily={F.mono} fontSize="9" style={{ letterSpacing: '0.04em' }}>{cityLabel}</text>
+                )}
+              </g>
+            );
+          })}
+        </g>
+      </svg>
+    </div>
+  );
+};
+const niceStep = (span) => { const r = span / 5; const p = Math.pow(10, Math.floor(Math.log10(r))); const m = r / p; return (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10) * p; };
 
 // ═══════════════════════ TIMELINE TRACK ═══════════════════════
 const TimelineTrack = ({ events, phases, currentTime, setCurrentTime, activeId, setActiveId, setPlaying }) => {
@@ -797,10 +900,12 @@ const App = () => {
       {showMap && (
         <section style={{ gridRow:'3 / 4', gridColumn: String(mapCol), ...edge(mapCol, detailCol), padding:'20px 24px 22px', display:'flex', flexDirection:'column', gap:12, overflow:'hidden', minWidth:0, minHeight:0, background:'radial-gradient(ellipse at center, rgba(20,18,15,0.8) 0%, rgba(10,9,7,1) 70%)' }}>
           <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', fontFamily:F.mono, fontSize:9.5, letterSpacing:'0.18em', textTransform:'uppercase', color:'rgba(230,220,200,0.55)' }}>
-            <span>Incident Globe</span>{active && active.location && <span style={{ color:'rgba(230,220,200,0.4)' }}>{String(active.location).split(',')[0]}</span>}
+            <span>{MAP.label || (MAP.mode === 'region' ? 'Incident Map' : 'Incident Globe')}</span>{active && active.location && <span style={{ color:'rgba(230,220,200,0.4)' }}>{String(active.location).split(',')[0]}</span>}
           </div>
           <div style={{ flex:1, minHeight:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
-            <Globe events={events} currentTime={currentTime} activeEvent={active} />
+            {MAP.mode === 'region'
+              ? <RegionMap events={events} currentTime={currentTime} activeEvent={active} />
+              : <Globe events={events} currentTime={currentTime} activeEvent={active} />}
           </div>
           <div style={{ display:'flex', gap:16, justifyContent:'center', flexWrap:'wrap', fontFamily:F.mono, fontSize:9.5, letterSpacing:'0.14em', textTransform:'uppercase', color:'rgba(230,220,200,0.5)' }}>
             {phases.map(p => <LegendDot key={p.id} color={phaseColor(p.id)} label={phaseLabel(p.id)} />)}
@@ -898,6 +1003,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App />);
         fontTitle: 'Fraunces', fontBody: 'Inter', fontMono: 'JetBrains Mono',
       }, cfg.theme || {});
       cfg.layout = Object.assign({ showMap: true, showEventList: true, showSeverity: true, showArtifacts: true, showPlayback: true, mapSide: 'right' }, cfg.layout || {});
+      cfg.map = Object.assign({ mode: 'globe' }, cfg.map || {});
       let events = Array.isArray(cfg.events) ? cfg.events.slice() : [];
       events.forEach((e, i) => { if (!e.id) e.id = 'e' + String(i + 1).padStart(2, '0'); });
 
@@ -1036,6 +1142,10 @@ RENDERER_SRC,
       const sc = (typeof th.scale === 'number' && th.scale > 0) ? th.scale : 1;
       $('s-scale').value = sc; $('s-scale-val').textContent = sc.toFixed(2);
       $('l-mapside').value = ly.mapSide === 'left' ? 'left' : 'right';
+      const mp = config.map || {};
+      $('l-maptype').value = ly.showMap === false ? 'none' : (mp.mode === 'region' ? 'region' : 'globe');
+      $('l-bounds').value = Array.isArray(mp.bounds) && mp.bounds.length === 4 ? mp.bounds.join(', ') : '';
+      $('row-bounds').style.display = ($('l-maptype').value === 'region') ? 'flex' : 'none';
       $('t-map').checked = ly.showMap !== false;
       $('t-list').checked = ly.showEventList !== false;
       $('t-sev').checked = ly.showSeverity !== false;
@@ -1074,6 +1184,26 @@ RENDERER_SRC,
     $('c-line').addEventListener('input', e => { config.theme.line = e.target.value; pushJson(); renderPreview(); });
     $('s-scale').addEventListener('input', e => { const v = parseFloat(e.target.value); config.theme.scale = v; $('s-scale-val').textContent = v.toFixed(2); pushJson(); renderPreview(); });
     $('l-mapside').addEventListener('change', e => { config.layout.mapSide = e.target.value; pushJson(); renderPreview(); });
+    $('l-maptype').addEventListener('change', e => {
+      const v = e.target.value;
+      config.map = config.map || {};
+      if (v === 'none') { config.layout.showMap = false; }
+      else { config.layout.showMap = true; config.map.mode = v; }
+      $('t-map').checked = config.layout.showMap;
+      $('row-bounds').style.display = (v === 'region') ? 'flex' : 'none';
+      pushJson(); renderPreview();
+    });
+    $('l-bounds').addEventListener('input', e => {
+      config.map = config.map || {};
+      const nums = e.target.value.split(/[,\s]+/).map(parseFloat).filter(n => isFinite(n));
+      if (nums.length === 4) config.map.bounds = nums; else delete config.map.bounds;
+      pushJson(); renderPreview();
+    });
+    // keep the map-type selector in sync when the master toggle is used
+    $('t-map').addEventListener('change', e => {
+      $('l-maptype').value = e.target.checked ? ((config.map && config.map.mode === 'region') ? 'region' : 'globe') : 'none';
+      $('row-bounds').style.display = ($('l-maptype').value === 'region') ? 'flex' : 'none';
+    });
     $('f-title').addEventListener('change', e => { config.theme.fontTitle = e.target.value; pushJson(); renderPreview(); });
     $('f-body').addEventListener('change', e => { config.theme.fontBody = e.target.value; pushJson(); renderPreview(); });
     $('f-mono').addEventListener('change', e => { config.theme.fontMono = e.target.value; pushJson(); renderPreview(); });

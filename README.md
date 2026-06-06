@@ -60,6 +60,14 @@ left panel:
   choices, and the JSON editor accepts arbitrary families).
 - **Blocks** — `showMap`, `showEventList`, `showSeverity`, `showArtifacts`,
   `showPlayback` toggle which parts of the timeline render.
+- **Layout** — `scale` (global UI/text size), `mapSide` (`right`/`left`),
+  `line` (separator colour).
+- **Map** — `map.mode` selects `globe` (rotating world, default), `region`
+  (a 2D map cropped to a country/area with the key cities labelled), or hide it
+  entirely via `showMap:false`. In region mode, `map.bounds` (`[W,S,E,N]`)
+  frames the area — omit it to auto-fit the event coordinates — and `map.label`
+  names the panel. Both map modes share the same coastline data (no extra
+  download).
 
 The structure is intentionally open so new style knobs (density, alternate
 layouts) can be added without touching event data.
