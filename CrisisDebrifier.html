@@ -196,8 +196,14 @@
 
       <div class="group">
         <div class="label"><span class="dot"></span>Export</div>
-        <button class="act primary" id="btn-html"><span class="ico">⤓</span>Télécharger la timeline<span class="hint">.html</span></button>
+        <button class="act primary" id="btn-html"><span class="ico">⤓</span><span id="btn-html-txt">Télécharger la timeline</span><span class="hint">.html</span></button>
         <button class="act" id="btn-json"><span class="ico">{ }</span>Télécharger la config<span class="hint">.json</span></button>
+        <div class="toggle-row" style="margin-top:10px"><label for="x-offline" style="font-weight:600">100% hors-ligne</label><input type="checkbox" id="x-offline"></div>
+        <div id="offline-opts" style="display:none;padding:8px 0 4px 14px;border-left:2px solid rgba(230,220,200,0.1);margin-top:4px">
+          <div class="toggle-row"><label for="x-fonts">Inclure les polices</label><input type="checkbox" id="x-fonts"></div>
+          <div class="toggle-row"><label for="x-mapdata">Inclure les données cartographiques</label><input type="checkbox" id="x-mapdata" checked></div>
+          <div class="note" style="margin-top:8px">Génération <code>10–30 s</code> selon la connexion.<br>Polices incluses → <code>+250–400 KB</code>.<br>Carte incluse → <code>+400 KB</code>.</div>
+        </div>
       </div>
 
       <div class="group">
@@ -241,6 +247,7 @@
           </select>
         </div>
         <div class="text-row" id="row-bounds"><label for="l-bounds">Cadrage région — O, S, E, N (vide = auto)</label><input type="text" id="l-bounds" placeholder="ex : 22, 44, 41, 53"></div>
+        <div class="text-row" id="row-country"><label for="l-country">Pays en surbrillance (code ISO numérique, ex : 804)</label><input type="text" id="l-country" placeholder="laisser vide = aucun"></div>
         <div class="text-row"><label for="l-mapside">Position de la carte</label>
           <select id="l-mapside"><option value="right">À droite</option><option value="left">À gauche</option></select>
         </div>
@@ -291,7 +298,7 @@ const MAP = CFG.map || {};
 const C = {
   bg:     THEME.bg     || '#0d0b08',
   fg:     THEME.fg     || '#e6dcc8',
-  ink:    THEME.ink    || C.ink,
+  ink:    THEME.ink    || '#f6f1e4',
   accent: THEME.accent || '#dc3c28',
   panel:  THEME.panel  || '#0a0907',
   line:   THEME.line   || 'rgba(230,220,200,0.12)',
@@ -343,32 +350,71 @@ const useLand = () => {
   const [land, setLand] = React.useState(null);
   React.useEffect(() => {
     let cancelled = false;
+    const process = (topo) => {
+      if (cancelled) return;
+      const t = topo.transform, sx = t.scale[0], sy = t.scale[1], tx = t.translate[0], ty = t.translate[1];
+      const decodeArc = (arc) => { let x=0,y=0; return arc.map(([dx,dy]) => { x+=dx; y+=dy; return [x*sx+tx, y*sy+ty]; }); };
+      const arcs = topo.arcs.map(decodeArc);
+      const lineFromArcIdx = (idx) => { const rev = idx < 0; const arc = arcs[rev ? ~idx : idx]; return rev ? [...arc].reverse() : arc; };
+      const polys = [];
+      const addRing = (arcIdxs) => {
+        const ring = [];
+        arcIdxs.forEach((ai, i) => { const seg = lineFromArcIdx(ai); for (let k = i===0?0:1; k<seg.length; k++) ring.push([seg[k][1], seg[k][0]]); });
+        polys.push(ring);
+      };
+      const walk = (g) => {
+        if (g.type === 'Polygon') g.arcs.forEach(addRing);
+        else if (g.type === 'MultiPolygon') g.arcs.forEach(p => p.forEach(addRing));
+        else if (g.type === 'GeometryCollection') g.geometries.forEach(walk);
+      };
+      walk(topo.objects.land);
+      setLand(polys);
+    };
+    if (window.__LAND_CACHE__) { process(window.__LAND_CACHE__); return; }
     fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/land-110m.json')
       .then(r => r.json())
-      .then(topo => {
-        if (cancelled) return;
-        const t = topo.transform, sx = t.scale[0], sy = t.scale[1], tx = t.translate[0], ty = t.translate[1];
-        const decodeArc = (arc) => { let x=0,y=0; return arc.map(([dx,dy]) => { x+=dx; y+=dy; return [x*sx+tx, y*sy+ty]; }); };
-        const arcs = topo.arcs.map(decodeArc);
-        const lineFromArcIdx = (idx) => { const rev = idx < 0; const arc = arcs[rev ? ~idx : idx]; return rev ? [...arc].reverse() : arc; };
-        const polys = [];
-        const addRing = (arcIdxs) => {
-          const ring = [];
-          arcIdxs.forEach((ai, i) => { const seg = lineFromArcIdx(ai); for (let k = i===0?0:1; k<seg.length; k++) ring.push([seg[k][1], seg[k][0]]); });
-          polys.push(ring);
-        };
-        const walk = (g) => {
-          if (g.type === 'Polygon') g.arcs.forEach(addRing);
-          else if (g.type === 'MultiPolygon') g.arcs.forEach(p => p.forEach(addRing));
-          else if (g.type === 'GeometryCollection') g.geometries.forEach(walk);
-        };
-        walk(topo.objects.land);
-        setLand(polys);
-      })
+      .then(topo => { if (!window.__LAND_CACHE__) window.__LAND_CACHE__ = topo; process(topo); })
       .catch(() => {});
     return () => { cancelled = true; };
   }, []);
   return land;
+};
+
+// ═══════════════════════ SHARED: country outlines ═════════════════════════
+// Fetches countries-110m.json once; returns [{id, rings}] per country polygon.
+// id is the ISO-3166-1 numeric code. Reused by both Globe and RegionMap.
+const useCountries = () => {
+  const [countries, setCountries] = React.useState(null);
+  React.useEffect(() => {
+    let cancelled = false;
+    const process = (topo) => {
+      if (cancelled) return;
+      const t = topo.transform, sx = t.scale[0], sy = t.scale[1], tx = t.translate[0], ty = t.translate[1];
+      const decodeArc = (arc) => { let x=0,y=0; return arc.map(([dx,dy]) => { x+=dx; y+=dy; return [x*sx+tx, y*sy+ty]; }); };
+      const arcs = topo.arcs.map(decodeArc);
+      const lineFromArcIdx = (idx) => { const rev = idx < 0; const arc = arcs[rev ? ~idx : idx]; return rev ? [...arc].reverse() : arc; };
+      const decodeRing = (arcIdxs) => {
+        const ring = [];
+        arcIdxs.forEach((ai, i) => { const seg = lineFromArcIdx(ai); for (let k = i===0?0:1; k<seg.length; k++) ring.push([seg[k][1], seg[k][0]]); });
+        return ring;
+      };
+      const result = [];
+      const walk = (g) => {
+        if (g.type === 'Polygon') result.push({ id: g.id, rings: g.arcs.map(decodeRing) });
+        else if (g.type === 'MultiPolygon') g.arcs.forEach(poly => result.push({ id: g.id, rings: poly.map(decodeRing) }));
+        else if (g.type === 'GeometryCollection') g.geometries.forEach(walk);
+      };
+      walk(topo.objects.countries);
+      setCountries(result);
+    };
+    if (window.__COUNTRIES_CACHE__) { process(window.__COUNTRIES_CACHE__); return; }
+    fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
+      .then(r => r.json())
+      .then(topo => { if (!window.__COUNTRIES_CACHE__) window.__COUNTRIES_CACHE__ = topo; process(topo); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+  return countries;
 };
 
 // ═══════════════════════ GLOBE ═══════════════════════
@@ -404,6 +450,7 @@ const Globe = ({ events, currentTime, activeEvent }) => {
   };
 
   const landmasses = useLand();
+  const countries  = useCountries();
 
   const firedEvents = events.filter(e => e.t <= currentTime && e.coords);
   return (
@@ -436,15 +483,29 @@ const Globe = ({ events, currentTime, activeEvent }) => {
             return pts.join(' ').split(' M ').filter(s=>s.trim()).map((seg,i)=> <polyline key={`lon${lon}-${i}`} points={seg} />);
           })}
         </g>
+        {/* land fill */}
         <g>
           {(landmasses || []).map((poly, i) => {
             const runs = []; let cur = [];
-            for (const [lat, lon] of poly) { const [x,y,v]=project(lat,lon); if (v) cur.push(`${x},${y}`); else if (cur.length) { runs.push(cur); cur=[]; } }
+            for (const [lat, lon] of poly) { const [x,y,v]=project(lat,lon); if (v) cur.push(`${x.toFixed(1)},${y.toFixed(1)}`); else if (cur.length) { runs.push(cur); cur=[]; } }
             if (cur.length) runs.push(cur);
             return runs.map((r, j) => r.length < 2 ? null : (
-              <polyline key={`${i}-${j}`} points={r.join(' ')} fill="rgba(230,220,200,0.12)" stroke="rgba(230,220,200,0.55)" strokeWidth="0.5" strokeLinejoin="round" />
+              <polyline key={`${i}-${j}`} points={r.join(' ')} fill="rgba(230,220,200,0.12)" stroke="none" />
             ));
           })}
+        </g>
+        {/* country borders */}
+        <g>
+          {(countries || []).map((country, ci) =>
+            country.rings.map((poly, ri) => {
+              const runs = []; let cur = [];
+              for (const [lat, lon] of poly) { const [x,y,v]=project(lat,lon); if (v) cur.push(`${x.toFixed(1)},${y.toFixed(1)}`); else if (cur.length) { runs.push(cur); cur=[]; } }
+              if (cur.length) runs.push(cur);
+              return runs.map((r, j) => r.length < 2 ? null : (
+                <polyline key={`cb${ci}-${ri}-${j}`} points={r.join(' ')} fill="none" stroke="rgba(230,220,200,0.28)" strokeWidth="0.4" />
+              ));
+            })
+          )}
         </g>
         <circle cx={cx} cy={cy} r={R} fill="url(#shade)" pointerEvents="none" />
         {firedEvents.map(evt => {
@@ -481,7 +542,8 @@ const Globe = ({ events, currentTime, activeEvent }) => {
 // the event coordinates, so "pick a country" can be as simple as choosing the
 // region mode when all your key cities live there. Event coords are the cities.
 const RegionMap = ({ events, currentTime, activeEvent }) => {
-  const land = useLand();
+  const land      = useLand();
+  const countries = useCountries();
   const W = 460, H = 460, PAD = 24;
   const geo = events.filter(e => Array.isArray(e.coords));
 
@@ -520,13 +582,27 @@ const RegionMap = ({ events, currentTime, activeEvent }) => {
             return lines;
           })()}
         </g>
-        {/* land */}
+        {/* land fill */}
         <g clipPath="url(#rClip)">
           {(land || []).map((poly, i) => {
-            // skip polygons fully outside the viewport for performance
             if (!poly.some(([la, lo]) => inBox(la, lo))) return null;
             const pts = poly.map(([la, lo]) => { const p = project(la, lo); return `${p[0].toFixed(1)},${p[1].toFixed(1)}`; }).join(' ');
-            return <polyline key={i} points={pts} fill="rgba(230,220,200,0.10)" stroke="rgba(230,220,200,0.5)" strokeWidth="0.6" strokeLinejoin="round" />;
+            return <polyline key={i} points={pts} fill="rgba(230,220,200,0.10)" stroke="none" />;
+          })}
+        </g>
+        {/* country borders + optional highlight */}
+        <g clipPath="url(#rClip)">
+          {(countries || []).map((country, ci) => {
+            const isHL = MAP.country != null && String(country.id) === String(MAP.country);
+            return country.rings.map((poly, ri) => {
+              if (!poly.some(([la, lo]) => inBox(la, lo))) return null;
+              const pts = poly.map(([la, lo]) => { const p = project(la, lo); return `${p[0].toFixed(1)},${p[1].toFixed(1)}`; }).join(' ');
+              return <polyline key={`c${ci}-${ri}`} points={pts}
+                fill={isHL ? 'rgba(220,180,100,0.18)' : 'none'}
+                stroke={isHL ? 'rgba(212,160,60,0.65)' : 'rgba(230,220,200,0.35)'}
+                strokeWidth={isHL ? '0.9' : '0.5'}
+                strokeLinejoin="round" />;
+            });
           })}
         </g>
         <rect x="0" y="0" width={W} height={H} fill="none" stroke="rgba(230,220,200,0.18)" strokeWidth="1" />
@@ -1105,6 +1181,102 @@ RENDERER_SRC,
       return link;
     }
 
+    // ── Offline export helpers ──
+    function arrayBufferToBase64(buf) {
+      const bytes = new Uint8Array(buf);
+      let binary = '';
+      for (let i = 0; i < bytes.length; i += 8192)
+        binary += String.fromCharCode.apply(null, bytes.subarray(i, Math.min(i + 8192, bytes.length)));
+      return btoa(binary);
+    }
+    function loadScript(src) {
+      return new Promise((resolve, reject) => {
+        if (document.querySelector('script[src="' + src + '"]')) { resolve(); return; }
+        const s = document.createElement('script');
+        s.src = src; s.onload = resolve; s.onerror = () => reject(new Error('Chargement échoué : ' + src));
+        document.head.appendChild(s);
+      });
+    }
+    async function fetchFontsInlined(t) {
+      const allLinks = fontsLinkFor(t);
+      const hrefs = [...allLinks.matchAll(/href="([^"]+)"/g)].map(m => m[1]);
+      let allCss = '';
+      for (const href of hrefs) {
+        let css; try { css = await fetch(href).then(r => r.text()); } catch { continue; }
+        const urlMatches = [...css.matchAll(/url\(([^)]+)\)/g)];
+        const reps = await Promise.all(urlMatches.map(async m => {
+          const rawUrl = m[1].replace(/['"]/g, '');
+          try { const ab = await fetch(rawUrl).then(r => r.arrayBuffer()); return [rawUrl, 'data:font/woff2;base64,' + arrayBufferToBase64(ab)]; }
+          catch { return null; }
+        }));
+        let inlined = css;
+        reps.forEach(r => { if (r) inlined = inlined.split(r[0]).join(r[1]); });
+        allCss += inlined + '\n';
+      }
+      return allCss ? '<style>\n' + allCss + '</style>' : '';
+    }
+    async function buildOfflineHTML(cfg, opts) {
+      if (!window.Babel) await loadScript('https://unpkg.com/@babel/standalone@7.29.0/babel.min.js');
+      const transpiledRenderer = window.Babel.transform(RENDERER_SRC, { presets: ['react'], filename: 'renderer.jsx' }).code;
+      const [reactText, reactDomText] = await Promise.all([
+        fetch('https://unpkg.com/react@18.3.1/umd/react.production.min.js').then(r => r.text()),
+        fetch('https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js').then(r => r.text()),
+      ]);
+      let mapCacheScript = '';
+      if (opts.includeMap) {
+        const [landJson, countriesJson] = await Promise.all([
+          fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/land-110m.json').then(r => r.text()),
+          fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(r => r.text()),
+        ]);
+        mapCacheScript = 'window.__LAND_CACHE__=' + landJson + ';window.__COUNTRIES_CACHE__=' + countriesJson + ';';
+      }
+      let fontsBlock = '<!-- offline: system fonts only -->';
+      if (opts.includeFonts) {
+        const inlined = await fetchFontsInlined(cfg.theme || {});
+        fontsBlock = inlined || '<!-- police : l\'intégration a échoué, polices système utilisées -->';
+      }
+      const t = cfg.theme || {};
+      const title = (cfg.meta && cfg.meta.title) || 'Timeline';
+      const json = JSON.stringify(cfg).replace(/</g, '\\u003c').replace(/-->/g, '--\\u003e');
+      const sc = (typeof t.scale === 'number' && t.scale > 0) ? t.scale : 1;
+      const rootRule = sc === 1
+        ? '  #root { position: relative; z-index: 1; width: 100%; height: 100%; }'
+        : '  #root { position: relative; z-index: 1; transform-origin: 0 0; transform: scale(' + sc + '); width: calc(100% / ' + sc + '); height: calc(100% / ' + sc + '); }';
+      return [
+        '<!DOCTYPE html>',
+        '<html lang="' + ((cfg.meta && cfg.meta.lang) || 'en') + '">',
+        '<head>',
+        '  <meta charset="UTF-8">',
+        '  <title>' + escapeHtml(title) + '</title>',
+        '  <meta name="viewport" content="width=device-width, initial-scale=1">',
+        fontsBlock,
+        '  <style>',
+        '    * { box-sizing: border-box; }',
+        '    html, body, #root { height: 100%; margin: 0; padding: 0; background: ' + (t.bg || '#0d0b08') + '; }',
+        '    body { font-family: ' + cssFamily(t.fontBody || 'Inter', 'sans-serif') + '; color: ' + (t.fg || '#e6dcc8') + '; overflow: hidden; -webkit-font-smoothing: antialiased; }',
+        '    body::before { content:""; position:fixed; inset:0; pointer-events:none; z-index:0; background-image: radial-gradient(circle at 20% 30%, ' + hexToRgba(t.accent || '#dc3c28', 0.035) + ' 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(212,160,60,0.025) 0%, transparent 50%); }',
+        rootRule,
+        '    ::-webkit-scrollbar { width: 10px; height: 10px; }',
+        '    ::-webkit-scrollbar-track { background: transparent; }',
+        '    ::-webkit-scrollbar-thumb { background: rgba(230,220,200,0.12); }',
+        '    ::-webkit-scrollbar-thumb:hover { background: rgba(230,220,200,0.25); }',
+        '    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.4;transform:scale(0.85);} }',
+        '    button { font-family: inherit; }',
+        '  </style>',
+        '</head>',
+        '<body>',
+        '  <div id="root"></div>',
+        '  <script>' + (mapCacheScript || '') + 'window.TIMELINE_CONFIG = ' + json + ';<\/script>',
+        '  <script>' + reactText + '<\/script>',
+        '  <script>' + reactDomText + '<\/script>',
+        '  <script>',
+        transpiledRenderer,
+        '  <\/script>',
+        '</body>',
+        '</html>',
+      ].join('\n');
+    }
+
     function hexToRgba(hex, a) {
       if (!hex || hex[0] !== '#') return hex;
       let h = hex.slice(1);
@@ -1145,7 +1317,10 @@ RENDERER_SRC,
       const mp = config.map || {};
       $('l-maptype').value = ly.showMap === false ? 'none' : (mp.mode === 'region' ? 'region' : 'globe');
       $('l-bounds').value = Array.isArray(mp.bounds) && mp.bounds.length === 4 ? mp.bounds.join(', ') : '';
-      $('row-bounds').style.display = ($('l-maptype').value === 'region') ? 'flex' : 'none';
+      $('l-country').value = (mp.country != null) ? String(mp.country) : '';
+      const isReg = $('l-maptype').value === 'region';
+      $('row-bounds').style.display = isReg ? 'flex' : 'none';
+      $('row-country').style.display = isReg ? 'flex' : 'none';
       $('t-map').checked = ly.showMap !== false;
       $('t-list').checked = ly.showEventList !== false;
       $('t-sev').checked = ly.showSeverity !== false;
@@ -1190,7 +1365,9 @@ RENDERER_SRC,
       if (v === 'none') { config.layout.showMap = false; }
       else { config.layout.showMap = true; config.map.mode = v; }
       $('t-map').checked = config.layout.showMap;
-      $('row-bounds').style.display = (v === 'region') ? 'flex' : 'none';
+      const isReg2 = (v === 'region');
+      $('row-bounds').style.display = isReg2 ? 'flex' : 'none';
+      $('row-country').style.display = isReg2 ? 'flex' : 'none';
       pushJson(); renderPreview();
     });
     $('l-bounds').addEventListener('input', e => {
@@ -1202,13 +1379,25 @@ RENDERER_SRC,
     // keep the map-type selector in sync when the master toggle is used
     $('t-map').addEventListener('change', e => {
       $('l-maptype').value = e.target.checked ? ((config.map && config.map.mode === 'region') ? 'region' : 'globe') : 'none';
-      $('row-bounds').style.display = ($('l-maptype').value === 'region') ? 'flex' : 'none';
+      const isReg3 = $('l-maptype').value === 'region';
+      $('row-bounds').style.display = isReg3 ? 'flex' : 'none';
+      $('row-country').style.display = isReg3 ? 'flex' : 'none';
     });
     $('f-title').addEventListener('change', e => { config.theme.fontTitle = e.target.value; pushJson(); renderPreview(); });
     $('f-body').addEventListener('change', e => { config.theme.fontBody = e.target.value; pushJson(); renderPreview(); });
     $('f-mono').addEventListener('change', e => { config.theme.fontMono = e.target.value; pushJson(); renderPreview(); });
     [['t-map','showMap'],['t-list','showEventList'],['t-sev','showSeverity'],['t-art','showArtifacts'],['t-play','showPlayback']].forEach(([id, key]) => {
       $(id).addEventListener('change', e => { config.layout[key] = e.target.checked; pushJson(); renderPreview(); });
+    });
+
+    $('x-offline').addEventListener('change', e => {
+      $('offline-opts').style.display = e.target.checked ? 'block' : 'none';
+    });
+    $('l-country').addEventListener('input', e => {
+      config.map = config.map || {};
+      const v = e.target.value.trim();
+      if (v) config.map.country = v; else delete config.map.country;
+      pushJson(); renderPreview();
     });
 
     $('btn-example').addEventListener('click', () => applyConfig(DEFAULT_CONFIG));
@@ -1230,9 +1419,28 @@ RENDERER_SRC,
       const name = ((config.meta.title || 'timeline').toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'timeline') + '.config.json';
       download(name, JSON.stringify(config, null, 2), 'application/json');
     });
-    $('btn-html').addEventListener('click', () => {
-      const name = ((config.meta.title || 'timeline').toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'timeline') + '.timeline.html';
-      download(name, buildHTML(config), 'text/html');
+    $('btn-html').addEventListener('click', async () => {
+      const isOffline = $('x-offline').checked;
+      if (!isOffline) {
+        const name = ((config.meta.title || 'timeline').toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'timeline') + '.timeline.html';
+        download(name, buildHTML(config), 'text/html');
+        return;
+      }
+      const btn = $('btn-html'), txtEl = $('btn-html-txt');
+      btn.disabled = true;
+      if (txtEl) txtEl.textContent = 'Génération…';
+      $('err').textContent = '';
+      try {
+        const opts = { includeMap: $('x-mapdata').checked, includeFonts: $('x-fonts').checked };
+        const html = await buildOfflineHTML(config, opts);
+        const name = ((config.meta.title || 'timeline').toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'timeline') + '.offline.html';
+        download(name, html, 'text/html');
+      } catch (e) {
+        $('err').textContent = 'Export hors-ligne : ' + e.message;
+      } finally {
+        btn.disabled = false;
+        if (txtEl) txtEl.textContent = 'Télécharger la timeline';
+      }
     });
 
     // ── Boot ──
