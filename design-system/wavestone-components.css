@@ -1,0 +1,222 @@
+/* ============================================================================
+   WAVESTONE DESIGN SYSTEM — Component classes
+   ----------------------------------------------------------------------------
+   Optional, framework-agnostic component styles built entirely on the tokens
+   from `wavestone-tokens.css`. Import both files:
+
+     <link rel="stylesheet" href="wavestone-tokens.css">
+     <link rel="stylesheet" href="wavestone-components.css">
+
+   Everything is prefixed `ws-` to avoid collisions.
+   ========================================================================== */
+
+/* --- Base / reset-ish ----------------------------------------------------- */
+.ws-root,
+.ws-root * { box-sizing: border-box; }
+.ws-root {
+  font-family: var(--ws-font-body);
+  color: var(--ws-color-text);
+  background: var(--ws-color-bg);
+  font-size: var(--ws-text-base);
+  line-height: var(--ws-leading-normal);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* --- Typography ----------------------------------------------------------- */
+.ws-display {
+  font-family: var(--ws-font-display);
+  font-weight: var(--ws-weight-extrabold);
+  font-size: var(--ws-text-6xl);
+  line-height: var(--ws-leading-none);
+  letter-spacing: var(--ws-tracking-tight);
+  color: var(--ws-color-heading);
+}
+.ws-h1 { font-family: var(--ws-font-display); font-weight: var(--ws-weight-bold); font-size: var(--ws-text-4xl); line-height: var(--ws-leading-tight); letter-spacing: var(--ws-tracking-tight); color: var(--ws-color-heading); margin: 0; }
+.ws-h2 { font-family: var(--ws-font-display); font-weight: var(--ws-weight-bold); font-size: var(--ws-text-3xl); line-height: var(--ws-leading-tight); color: var(--ws-color-heading); margin: 0; }
+.ws-h3 { font-family: var(--ws-font-display); font-weight: var(--ws-weight-semibold); font-size: var(--ws-text-xl); line-height: var(--ws-leading-snug); color: var(--ws-color-heading); margin: 0; }
+.ws-body { font-family: var(--ws-font-body); font-size: var(--ws-text-base); line-height: var(--ws-leading-relaxed); color: var(--ws-color-text); }
+.ws-small { font-size: var(--ws-text-sm); color: var(--ws-color-text-muted); }
+
+/* Eyebrow label — uppercase with the signature underline accent */
+.ws-eyebrow {
+  display: inline-block;
+  font-family: var(--ws-font-body);
+  font-weight: var(--ws-weight-bold);
+  font-size: var(--ws-text-xs);
+  letter-spacing: var(--ws-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--ws-color-text);
+  padding-bottom: var(--ws-space-1);
+  border-bottom: var(--ws-border-width-thick) solid var(--ws-color-accent);
+}
+
+/* Big stat number (green on indigo, per the "Key figures" page) */
+.ws-stat {
+  font-family: var(--ws-font-display);
+  font-weight: var(--ws-weight-bold);
+  font-size: var(--ws-text-7xl);
+  line-height: var(--ws-leading-none);
+  letter-spacing: var(--ws-tracking-tight);
+  color: var(--ws-color-accent);
+}
+.ws-stat__label {
+  display: block;
+  font-family: var(--ws-font-body);
+  font-weight: var(--ws-weight-semibold);
+  font-size: var(--ws-text-base);
+  color: var(--ws-color-text);
+  margin-top: var(--ws-space-2);
+}
+
+/* Accent text helpers */
+.ws-text-accent  { color: var(--ws-color-accent-strong); }
+.ws-text-primary { color: var(--ws-color-primary); }
+.ws-text-muted   { color: var(--ws-color-text-muted); }
+
+/* --- Buttons -------------------------------------------------------------- */
+.ws-btn {
+  --_pad-y: var(--ws-space-3);
+  --_pad-x: var(--ws-space-6);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ws-space-2);
+  font-family: var(--ws-font-body);
+  font-weight: var(--ws-weight-semibold);
+  font-size: var(--ws-text-sm);
+  line-height: 1;
+  padding: var(--_pad-y) var(--_pad-x);
+  border: var(--ws-border-width) solid transparent;
+  border-radius: var(--ws-radius-pill);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background var(--ws-duration-base) var(--ws-ease-standard),
+              color var(--ws-duration-base) var(--ws-ease-standard),
+              border-color var(--ws-duration-base) var(--ws-ease-standard),
+              box-shadow var(--ws-duration-base) var(--ws-ease-standard),
+              transform var(--ws-duration-fast) var(--ws-ease-standard);
+}
+.ws-btn:active { transform: translateY(1px); }
+.ws-btn:focus-visible { outline: none; box-shadow: var(--ws-shadow-focus); }
+.ws-btn:disabled,
+.ws-btn[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
+
+.ws-btn--primary { background: var(--ws-color-primary); color: var(--ws-color-primary-contrast); }
+.ws-btn--primary:hover { background: var(--ws-color-primary-hover); box-shadow: var(--ws-shadow-brand); }
+
+.ws-btn--accent { background: var(--ws-color-accent); color: var(--ws-color-accent-contrast); }
+.ws-btn--accent:hover { background: var(--ws-green-300); }
+
+.ws-btn--outline { background: transparent; color: var(--ws-color-primary); border-color: var(--ws-color-primary); }
+.ws-btn--outline:hover { background: var(--ws-color-primary-subtle); }
+
+.ws-btn--ghost { background: transparent; color: var(--ws-color-text); }
+.ws-btn--ghost:hover { background: var(--ws-color-bg-muted); }
+
+.ws-btn--sm { --_pad-y: var(--ws-space-2); --_pad-x: var(--ws-space-4); font-size: var(--ws-text-xs); }
+.ws-btn--lg { --_pad-y: var(--ws-space-4); --_pad-x: var(--ws-space-8); font-size: var(--ws-text-base); }
+
+/* --- Badges / tags (the "CHAPTER 1" pill, "NEW" tag) ---------------------- */
+.ws-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ws-space-1);
+  font-family: var(--ws-font-body);
+  font-weight: var(--ws-weight-bold);
+  font-size: var(--ws-text-xs);
+  letter-spacing: var(--ws-tracking-wide);
+  text-transform: uppercase;
+  padding: var(--ws-space-1) var(--ws-space-3);
+  border-radius: var(--ws-radius-sm);
+  line-height: 1.4;
+}
+.ws-badge--primary { background: var(--ws-color-primary); color: var(--ws-white); }
+.ws-badge--accent  { background: var(--ws-color-accent); color: var(--ws-indigo-900); }
+.ws-badge--teal    { background: var(--ws-color-secondary); color: var(--ws-white); }
+.ws-badge--subtle  { background: var(--ws-color-primary-subtle); color: var(--ws-color-primary); }
+.ws-badge--outline { background: transparent; border: var(--ws-border-width) solid var(--ws-color-border-strong); color: var(--ws-color-text-muted); }
+
+/* --- Card ----------------------------------------------------------------- */
+.ws-card {
+  background: var(--ws-color-surface);
+  border: var(--ws-border-width) solid var(--ws-color-border);
+  border-radius: var(--ws-radius-xl);
+  padding: var(--ws-space-6);
+  box-shadow: var(--ws-shadow-sm);
+  transition: box-shadow var(--ws-duration-base) var(--ws-ease-standard),
+              transform var(--ws-duration-base) var(--ws-ease-standard);
+}
+.ws-card--interactive:hover { box-shadow: var(--ws-shadow-lg); transform: translateY(-2px); }
+.ws-card__title { font-family: var(--ws-font-display); font-weight: var(--ws-weight-semibold); font-size: var(--ws-text-xl); color: var(--ws-color-heading); margin: 0 0 var(--ws-space-2); }
+.ws-card__body  { color: var(--ws-color-text-muted); margin: 0; }
+
+/* --- Blockquote (editorial pull-quote, indigo + green corner) ------------- */
+.ws-quote {
+  font-family: var(--ws-font-display);
+  font-weight: var(--ws-weight-bold);
+  font-size: var(--ws-text-2xl);
+  line-height: var(--ws-leading-snug);
+  color: var(--ws-color-primary);
+  text-align: center;
+  max-width: 38ch;
+  margin: 0 auto;
+}
+.ws-quote__cite {
+  display: block;
+  font-family: var(--ws-font-body);
+  font-weight: var(--ws-weight-medium);
+  font-size: var(--ws-text-sm);
+  color: var(--ws-color-text-muted);
+  margin-top: var(--ws-space-4);
+}
+
+/* --- Form controls -------------------------------------------------------- */
+.ws-input,
+.ws-select,
+.ws-textarea {
+  width: 100%;
+  font-family: var(--ws-font-body);
+  font-size: var(--ws-text-base);
+  color: var(--ws-color-text);
+  background: var(--ws-color-surface);
+  border: var(--ws-border-width) solid var(--ws-color-border-strong);
+  border-radius: var(--ws-radius-md);
+  padding: var(--ws-space-3) var(--ws-space-4);
+  transition: border-color var(--ws-duration-base) var(--ws-ease-standard),
+              box-shadow var(--ws-duration-base) var(--ws-ease-standard);
+}
+.ws-input::placeholder,
+.ws-textarea::placeholder { color: var(--ws-color-text-subtle); }
+.ws-input:focus,
+.ws-select:focus,
+.ws-textarea:focus {
+  outline: none;
+  border-color: var(--ws-color-focus-ring);
+  box-shadow: var(--ws-shadow-focus);
+}
+.ws-label {
+  display: inline-block;
+  font-weight: var(--ws-weight-semibold);
+  font-size: var(--ws-text-sm);
+  color: var(--ws-color-text);
+  margin-bottom: var(--ws-space-2);
+}
+
+/* --- Divider / wave rule -------------------------------------------------- */
+.ws-divider { height: var(--ws-border-width); background: var(--ws-color-divider); border: 0; margin: var(--ws-space-6) 0; }
+.ws-rule-accent { height: var(--ws-border-width-thick); width: 56px; background: var(--ws-color-accent); border: 0; border-radius: var(--ws-radius-pill); }
+
+/* --- Link ----------------------------------------------------------------- */
+.ws-link {
+  color: var(--ws-color-primary);
+  text-decoration: none;
+  font-weight: var(--ws-weight-medium);
+  border-bottom: var(--ws-border-width) solid transparent;
+  transition: border-color var(--ws-duration-base) var(--ws-ease-standard);
+}
+.ws-link:hover { border-bottom-color: var(--ws-color-accent); }
+
+/* --- Layout helpers ------------------------------------------------------- */
+.ws-container { max-width: var(--ws-container-xl); margin-inline: auto; padding-inline: var(--ws-space-6); }
+.ws-stack > * + * { margin-top: var(--ws-space-4); }
+.ws-cluster { display: flex; flex-wrap: wrap; gap: var(--ws-space-3); align-items: center; }
