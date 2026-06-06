@@ -1,0 +1,1452 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Crisis Debriefer — Timeline Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0d0b08;
+      color: #e6dcc8;
+      -webkit-font-smoothing: antialiased;
+      overflow: hidden;
+    }
+    .app {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      height: 100vh;
+    }
+    .panel {
+      border-right: 1px solid rgba(230,220,200,0.12);
+      background: #0a0907;
+      overflow-y: auto;
+      padding: 18px 20px 60px;
+    }
+    .preview {
+      position: relative;
+      background: #050403;
+      min-width: 0;
+    }
+    .preview iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+    }
+    h1 {
+      font-size: 16px;
+      letter-spacing: -0.01em;
+      margin: 0 0 2px;
+      font-weight: 600;
+      color: #f6f1e4;
+    }
+    .sub {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9.5px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: rgba(230,220,200,0.45);
+      margin-bottom: 18px;
+    }
+    .group { margin-bottom: 22px; }
+    .group > .label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9.5px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: rgba(230,220,200,0.5);
+      margin-bottom: 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid rgba(230,220,200,0.1);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .group > .label .dot { width: 6px; height: 6px; border-radius: 50%; background: #dc3c28; }
+    button.act {
+      width: 100%;
+      text-align: left;
+      padding: 9px 12px;
+      margin-bottom: 7px;
+      background: rgba(230,220,200,0.05);
+      border: 1px solid rgba(230,220,200,0.14);
+      color: #e6dcc8;
+      font-family: 'Inter', sans-serif;
+      font-size: 12.5px;
+      font-weight: 500;
+      cursor: pointer;
+      border-radius: 3px;
+      transition: background 140ms, border-color 140ms;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+    button.act:hover { background: rgba(230,220,200,0.09); border-color: rgba(230,220,200,0.28); }
+    button.act.primary {
+      background: #dc3c28;
+      color: #0a0907;
+      border-color: #dc3c28;
+      font-weight: 600;
+    }
+    button.act.primary:hover { background: #e8553f; border-color: #e8553f; }
+    button.act .ico { font-size: 14px; opacity: 0.85; }
+    button.act .hint { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.1em; opacity: 0.5; text-transform: uppercase; }
+    .toggle-row, .color-row, .text-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 0;
+      font-size: 12.5px;
+      color: rgba(230,220,200,0.85);
+    }
+    .toggle-row label, .color-row label, .text-row label { flex: 1; cursor: pointer; }
+    .text-row { flex-direction: column; align-items: stretch; gap: 5px; }
+    .text-row label { flex: none; font-size: 11px; color: rgba(230,220,200,0.55); font-family: 'JetBrains Mono', monospace; letter-spacing: 0.04em; }
+    input[type="text"] {
+      width: 100%;
+      padding: 7px 9px;
+      background: rgba(230,220,200,0.05);
+      border: 1px solid rgba(230,220,200,0.16);
+      color: #f6f1e4;
+      font-family: 'Inter', sans-serif;
+      font-size: 12.5px;
+      border-radius: 3px;
+    }
+    input[type="color"] {
+      width: 34px; height: 24px; padding: 0;
+      background: none; border: 1px solid rgba(230,220,200,0.2);
+      border-radius: 3px; cursor: pointer;
+    }
+    select {
+      width: 100%;
+      padding: 7px 9px;
+      background: rgba(230,220,200,0.05);
+      border: 1px solid rgba(230,220,200,0.16);
+      color: #f6f1e4;
+      font-family: 'Inter', sans-serif;
+      font-size: 12.5px;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    select option { background: #14110d; color: #f6f1e4; }
+    input[type="range"] { flex: 1; accent-color: #dc3c28; cursor: pointer; }
+    .range-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
+    .range-row .swatch-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: rgba(230,220,200,0.5); width: 64px; }
+    .range-row .val { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #d4a03c; width: 34px; text-align: right; }
+    input[type="checkbox"] { width: 15px; height: 15px; accent-color: #dc3c28; cursor: pointer; }
+    .color-row .swatch-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: rgba(230,220,200,0.5); width: 64px; }
+    textarea {
+      width: 100%;
+      height: 200px;
+      resize: vertical;
+      padding: 10px;
+      background: #050403;
+      border: 1px solid rgba(230,220,200,0.16);
+      color: #cfe6c8;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      line-height: 1.5;
+      border-radius: 3px;
+      white-space: pre;
+      overflow: auto;
+    }
+    .err {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10.5px;
+      color: #ff6b52;
+      margin-top: 6px;
+      min-height: 14px;
+      white-space: pre-wrap;
+    }
+    .note {
+      font-size: 11px;
+      line-height: 1.5;
+      color: rgba(230,220,200,0.45);
+      background: rgba(230,220,200,0.03);
+      border-left: 2px solid rgba(230,220,200,0.18);
+      padding: 9px 11px;
+      border-radius: 0 3px 3px 0;
+    }
+    .note code { font-family: 'JetBrains Mono', monospace; color: #d4a03c; font-size: 10.5px; }
+    input[type="file"] { display: none; }
+    ::-webkit-scrollbar { width: 10px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(230,220,200,0.14); }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(230,220,200,0.28); }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="panel">
+      <h1>Crisis Debriefer</h1>
+      <div class="sub">Timeline generator · standalone output</div>
+
+      <div class="group">
+        <div class="label"><span class="dot"></span>Source</div>
+        <button class="act" id="btn-load"><span class="ico">⇪</span>Charger un fichier de config<span class="hint">.json</span></button>
+        <button class="act" id="btn-example"><span class="ico">◷</span>Exemple NotPetya<span class="hint">demo</span></button>
+        <input type="file" id="file" accept="application/json,.json">
+      </div>
+
+      <div class="group">
+        <div class="label"><span class="dot"></span>Export</div>
+        <button class="act primary" id="btn-html"><span class="ico">⤓</span><span id="btn-html-txt">Télécharger la timeline</span><span class="hint">.html</span></button>
+        <button class="act" id="btn-json"><span class="ico">{ }</span>Télécharger la config<span class="hint">.json</span></button>
+        <div class="toggle-row" style="margin-top:10px"><label for="x-offline" style="font-weight:600">100% hors-ligne</label><input type="checkbox" id="x-offline"></div>
+        <div id="offline-opts" style="display:none;padding:8px 0 4px 14px;border-left:2px solid rgba(230,220,200,0.1);margin-top:4px">
+          <div class="toggle-row"><label for="x-fonts">Inclure les polices</label><input type="checkbox" id="x-fonts"></div>
+          <div class="toggle-row"><label for="x-mapdata">Inclure les données cartographiques</label><input type="checkbox" id="x-mapdata" checked></div>
+          <div class="note" style="margin-top:8px">Génération <code>10–30 s</code> selon la connexion.<br>Polices incluses → <code>+250–400 KB</code>.<br>Carte incluse → <code>+400 KB</code>.</div>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="label"><span class="dot"></span>Blocs affichés</div>
+        <div class="toggle-row"><label for="t-map">Carte / globe</label><input type="checkbox" id="t-map"></div>
+        <div class="toggle-row"><label for="t-list">Liste chronologique</label><input type="checkbox" id="t-list"></div>
+        <div class="toggle-row"><label for="t-sev">Sévérité</label><input type="checkbox" id="t-sev"></div>
+        <div class="toggle-row"><label for="t-art">Artefacts</label><input type="checkbox" id="t-art"></div>
+        <div class="toggle-row"><label for="t-play">Lecture automatique</label><input type="checkbox" id="t-play"></div>
+      </div>
+
+      <div class="group">
+        <div class="label"><span class="dot"></span>Style visuel</div>
+        <div class="text-row"><label for="m-title">Titre</label><input type="text" id="m-title"></div>
+        <div class="text-row"><label for="m-sub">Sous-titre</label><input type="text" id="m-sub"></div>
+        <div class="text-row"><label for="m-badge">Badge</label><input type="text" id="m-badge"></div>
+        <div class="color-row"><span class="swatch-label">Fond</span><input type="color" id="c-bg"><label>Arrière-plan</label></div>
+        <div class="color-row"><span class="swatch-label">Texte</span><input type="color" id="c-fg"><label>Corps de texte</label></div>
+        <div class="color-row"><span class="swatch-label">Titres</span><input type="color" id="c-ink"><label>Encre (titres)</label></div>
+        <div class="color-row"><span class="swatch-label">Accent</span><input type="color" id="c-accent"><label>Accent</label></div>
+        <div class="color-row"><span class="swatch-label">Panneaux</span><input type="color" id="c-panel"><label>Bandeaux</label></div>
+        <div class="color-row"><span class="swatch-label">Bordures</span><input type="color" id="c-line"><label>Lignes de séparation</label></div>
+        <div id="phase-colors"></div>
+      </div>
+
+      <div class="group">
+        <div class="label"><span class="dot"></span>Typographie</div>
+        <div class="text-row"><label for="f-title">Police des titres</label><select id="f-title"></select></div>
+        <div class="text-row"><label for="f-body">Police du corps</label><select id="f-body"></select></div>
+        <div class="text-row"><label for="f-mono">Police mono</label><select id="f-mono"></select></div>
+        <div class="range-row"><span class="swatch-label">Échelle</span><input type="range" id="s-scale" min="0.8" max="1.3" step="0.05"><span class="val" id="s-scale-val">1.0</span></div>
+      </div>
+
+      <div class="group">
+        <div class="label"><span class="dot"></span>Disposition</div>
+        <div class="text-row"><label for="l-maptype">Type de carte</label>
+          <select id="l-maptype">
+            <option value="globe">Globe (monde)</option>
+            <option value="region">Région / pays (villes clés)</option>
+            <option value="none">Aucune carte</option>
+          </select>
+        </div>
+        <div class="text-row" id="row-bounds"><label for="l-bounds">Cadrage région — O, S, E, N (vide = auto)</label><input type="text" id="l-bounds" placeholder="ex : 22, 44, 41, 53"></div>
+        <div class="text-row" id="row-country"><label for="l-country">Pays en surbrillance (code ISO numérique, ex : 804)</label><input type="text" id="l-country" placeholder="laisser vide = aucun"></div>
+        <div class="text-row"><label for="l-mapside">Position de la carte</label>
+          <select id="l-mapside"><option value="right">À droite</option><option value="left">À gauche</option></select>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="label"><span class="dot"></span>Config (JSON)</div>
+        <textarea id="json" spellcheck="false"></textarea>
+        <button class="act" id="btn-apply" style="margin-top:8px"><span class="ico">↻</span>Appliquer le JSON</button>
+        <div class="err" id="err"></div>
+      </div>
+
+      <div class="group">
+        <div class="note">
+          Le fichier d'entrée décrit <code>meta</code>, <code>phases</code> et <code>events</code>.
+          Les sections <code>theme</code> et <code>layout</code> pilotent le style (couleurs, blocs).
+          La position de chaque étape est déduite de <code>t</code> (0→1) ou d'un champ <code>date</code>.
+          L'aperçu est <em>exactement</em> le fichier téléchargé.
+        </div>
+      </div>
+    </aside>
+
+    <main class="preview">
+      <iframe id="preview" title="Aperçu de la timeline"></iframe>
+    </main>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       RENDERER SOURCE — non-executing template.
+       This React app reads window.TIMELINE_CONFIG and renders a generic,
+       interactive crisis timeline. It is injected verbatim into every
+       generated standalone file AND into the live preview iframe, so the
+       preview is byte-for-byte identical to the downloaded artifact.
+       ════════════════════════════════════════════════════════════════ -->
+  <script type="text/plain" id="tpl-renderer">
+const { useState, useEffect, useRef, useMemo, useCallback } = React;
+
+const CFG    = window.TIMELINE_CONFIG || {};
+const META   = CFG.meta || {};
+const THEME  = CFG.theme || {};
+const LAYOUT = CFG.layout || {};
+const EVENTS = (CFG.events || []).slice().sort((a, b) => (a.t || 0) - (b.t || 0));
+const PHASES = CFG.phases || [];
+const KIND_LABELS = CFG.kindLabels || {};
+const MAP = CFG.map || {};
+
+// ── Theme tokens (working style knobs; extend here for future themes) ──
+const C = {
+  bg:     THEME.bg     || '#0d0b08',
+  fg:     THEME.fg     || '#e6dcc8',
+  ink:    THEME.ink    || '#f6f1e4',
+  accent: THEME.accent || '#dc3c28',
+  panel:  THEME.panel  || '#0a0907',
+  line:   THEME.line   || 'rgba(230,220,200,0.12)',
+  muted:  THEME.muted  || 'rgba(230,220,200,0.55)',
+};
+// ── Typography tokens (configurable font families) ──
+const F = {
+  title: (THEME.fontTitle || 'Fraunces') + ", 'Times New Roman', serif",
+  body:  (THEME.fontBody  || 'Inter') + ", sans-serif",
+  mono:  (THEME.fontMono  || 'JetBrains Mono') + ", monospace",
+};
+
+// ── Layout blocks (toggle-able presence) ──
+const showMap      = LAYOUT.showMap       !== false && EVENTS.some(e => Array.isArray(e.coords));
+const showList     = LAYOUT.showEventList !== false;
+const showSeverity = LAYOUT.showSeverity  !== false;
+const showArtifacts= LAYOUT.showArtifacts !== false;
+const showPlayback = LAYOUT.showPlayback  !== false;
+
+const DEFAULT_PHASE_COLORS = ['#d4a03c','#dc3c28','#b4afa5','#6c9b7d','#7d8bb0','#b07d9b'];
+const phaseById = (id) => PHASES.find(p => p.id === id);
+const phaseColor = (id) => {
+  const p = phaseById(id);
+  if (p && p.color) return p.color;
+  const i = PHASES.findIndex(x => x.id === id);
+  return i >= 0 ? DEFAULT_PHASE_COLORS[i % DEFAULT_PHASE_COLORS.length] : C.accent;
+};
+const phaseLabel = (id) => {
+  const p = phaseById(id);
+  const base = p ? (p.label || id) : (id || '');
+  return String(base).split('·')[0].trim().toUpperCase();
+};
+const kindLabel = (k) => k ? (KIND_LABELS[k] || String(k).toUpperCase()) : '';
+const shortDate = (d) => String(d || '').split(',')[0].toUpperCase();
+const hexToRgba = (hex, a) => {
+  if (!hex || hex[0] !== '#') return hex;
+  let h = hex.slice(1);
+  if (h.length === 3) h = h.split('').map(c => c + c).join('');
+  const n = parseInt(h, 16);
+  return 'rgba(' + ((n>>16)&255) + ',' + ((n>>8)&255) + ',' + (n&255) + ',' + a + ')';
+};
+const slug = (META.title || 'timeline').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+// ═══════════════════════ SHARED: coastline data ═══════════════════════
+// Fetch world-atlas land once and decode to [lat,lon] rings. Reused by both
+// the globe and the region (single-country) map so adding the second mode
+// costs almost nothing in payload.
+const useLand = () => {
+  const [land, setLand] = React.useState(null);
+  React.useEffect(() => {
+    let cancelled = false;
+    const process = (topo) => {
+      if (cancelled) return;
+      const t = topo.transform, sx = t.scale[0], sy = t.scale[1], tx = t.translate[0], ty = t.translate[1];
+      const decodeArc = (arc) => { let x=0,y=0; return arc.map(([dx,dy]) => { x+=dx; y+=dy; return [x*sx+tx, y*sy+ty]; }); };
+      const arcs = topo.arcs.map(decodeArc);
+      const lineFromArcIdx = (idx) => { const rev = idx < 0; const arc = arcs[rev ? ~idx : idx]; return rev ? [...arc].reverse() : arc; };
+      const polys = [];
+      const addRing = (arcIdxs) => {
+        const ring = [];
+        arcIdxs.forEach((ai, i) => { const seg = lineFromArcIdx(ai); for (let k = i===0?0:1; k<seg.length; k++) ring.push([seg[k][1], seg[k][0]]); });
+        polys.push(ring);
+      };
+      const walk = (g) => {
+        if (g.type === 'Polygon') g.arcs.forEach(addRing);
+        else if (g.type === 'MultiPolygon') g.arcs.forEach(p => p.forEach(addRing));
+        else if (g.type === 'GeometryCollection') g.geometries.forEach(walk);
+      };
+      walk(topo.objects.land);
+      setLand(polys);
+    };
+    if (window.__LAND_CACHE__) { process(window.__LAND_CACHE__); return; }
+    fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/land-110m.json')
+      .then(r => r.json())
+      .then(topo => { if (!window.__LAND_CACHE__) window.__LAND_CACHE__ = topo; process(topo); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+  return land;
+};
+
+// ═══════════════════════ SHARED: country outlines ═════════════════════════
+// Fetches countries-110m.json once; returns [{id, rings}] per country polygon.
+// id is the ISO-3166-1 numeric code. Reused by both Globe and RegionMap.
+const useCountries = () => {
+  const [countries, setCountries] = React.useState(null);
+  React.useEffect(() => {
+    let cancelled = false;
+    const process = (topo) => {
+      if (cancelled) return;
+      const t = topo.transform, sx = t.scale[0], sy = t.scale[1], tx = t.translate[0], ty = t.translate[1];
+      const decodeArc = (arc) => { let x=0,y=0; return arc.map(([dx,dy]) => { x+=dx; y+=dy; return [x*sx+tx, y*sy+ty]; }); };
+      const arcs = topo.arcs.map(decodeArc);
+      const lineFromArcIdx = (idx) => { const rev = idx < 0; const arc = arcs[rev ? ~idx : idx]; return rev ? [...arc].reverse() : arc; };
+      const decodeRing = (arcIdxs) => {
+        const ring = [];
+        arcIdxs.forEach((ai, i) => { const seg = lineFromArcIdx(ai); for (let k = i===0?0:1; k<seg.length; k++) ring.push([seg[k][1], seg[k][0]]); });
+        return ring;
+      };
+      const result = [];
+      const walk = (g) => {
+        if (g.type === 'Polygon') result.push({ id: g.id, rings: g.arcs.map(decodeRing) });
+        else if (g.type === 'MultiPolygon') g.arcs.forEach(poly => result.push({ id: g.id, rings: poly.map(decodeRing) }));
+        else if (g.type === 'GeometryCollection') g.geometries.forEach(walk);
+      };
+      walk(topo.objects.countries);
+      setCountries(result);
+    };
+    if (window.__COUNTRIES_CACHE__) { process(window.__COUNTRIES_CACHE__); return; }
+    fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
+      .then(r => r.json())
+      .then(topo => { if (!window.__COUNTRIES_CACHE__) window.__COUNTRIES_CACHE__ = topo; process(topo); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+  return countries;
+};
+
+// ═══════════════════════ GLOBE ═══════════════════════
+const Globe = ({ events, currentTime, activeEvent }) => {
+  const size = 460, cx = size/2, cy = size/2, R = size*0.46;
+  const targetLon = activeEvent && activeEvent.coords ? activeEvent.coords[1] : 20;
+  const targetLat = activeEvent && activeEvent.coords ? activeEvent.coords[0] : 30;
+  const [rot, setRot] = React.useState({ lon: targetLon, lat: targetLat });
+  const rafRef = React.useRef(null);
+  React.useEffect(() => {
+    const tl = targetLon, tla = Math.max(-60, Math.min(60, targetLat * 0.35));
+    const animate = () => {
+      setRot(prev => {
+        let dl = tl - prev.lon;
+        if (dl > 180) dl -= 360; if (dl < -180) dl += 360;
+        const dla = tla - prev.lat;
+        if (Math.abs(dl) < 0.1 && Math.abs(dla) < 0.1) return prev;
+        return { lon: prev.lon + dl*0.06, lat: prev.lat + dla*0.06 };
+      });
+      rafRef.current = requestAnimationFrame(animate);
+    };
+    rafRef.current = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [targetLon, targetLat]);
+
+  const project = (lat, lon) => {
+    const f = lat*Math.PI/180, l = (lon - rot.lon)*Math.PI/180, f0 = rot.lat*Math.PI/180;
+    const cosc = Math.sin(f0)*Math.sin(f) + Math.cos(f0)*Math.cos(f)*Math.cos(l);
+    if (cosc < 0) return [0, 0, false];
+    const x = R*Math.cos(f)*Math.sin(l);
+    const y = R*(Math.cos(f0)*Math.sin(f) - Math.sin(f0)*Math.cos(f)*Math.cos(l));
+    return [cx + x, cy - y, true];
+  };
+
+  const landmasses = useLand();
+  const countries  = useCountries();
+
+  const firedEvents = events.filter(e => e.t <= currentTime && e.coords);
+  return (
+    <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center' }}>
+      <svg viewBox={`0 0 ${size} ${size}`} style={{ width:'100%', height:'100%', maxHeight:'100%' }}>
+        <defs>
+          <radialGradient id="oceanGrad" cx="40%" cy="40%">
+            <stop offset="0%" stopColor="#1a1611" /><stop offset="60%" stopColor="#0a0907" /><stop offset="100%" stopColor="#08070a" />
+          </radialGradient>
+          <radialGradient id="rim" cx="50%" cy="50%">
+            <stop offset="85%" stopColor="rgba(230,220,200,0)" /><stop offset="95%" stopColor="rgba(230,220,200,0.15)" /><stop offset="100%" stopColor="rgba(230,220,200,0)" />
+          </radialGradient>
+          <radialGradient id="shade" cx="70%" cy="70%">
+            <stop offset="0%" stopColor="rgba(0,0,0,0)" /><stop offset="100%" stopColor="rgba(0,0,0,0.55)" />
+          </radialGradient>
+          <radialGradient id="pulseGrad">
+            <stop offset="0%" stopColor={hexToRgba(C.accent, 0.7)} /><stop offset="60%" stopColor={hexToRgba(C.accent, 0.18)} /><stop offset="100%" stopColor={hexToRgba(C.accent, 0)} />
+          </radialGradient>
+        </defs>
+        <circle cx={cx} cy={cy} r={R} fill="url(#oceanGrad)" />
+        <g stroke="rgba(230,220,200,0.07)" strokeWidth="0.6" fill="none">
+          {[-60,-30,0,30,60].map(lat => {
+            const pts = [];
+            for (let lon=-180; lon<=180; lon+=6) { const [x,y,v]=project(lat,lon); if (v) pts.push(`${x},${y}`); else if (pts.length) pts.push('M'); }
+            return pts.join(' ').split(' M ').filter(s=>s.trim()).map((seg,i)=> <polyline key={`lat${lat}-${i}`} points={seg} />);
+          })}
+          {[-150,-120,-90,-60,-30,0,30,60,90,120,150,180].map(lon => {
+            const pts = [];
+            for (let lat=-85; lat<=85; lat+=5) { const [x,y,v]=project(lat,lon); if (v) pts.push(`${x},${y}`); else if (pts.length) pts.push('M'); }
+            return pts.join(' ').split(' M ').filter(s=>s.trim()).map((seg,i)=> <polyline key={`lon${lon}-${i}`} points={seg} />);
+          })}
+        </g>
+        {/* land fill */}
+        <g>
+          {(landmasses || []).map((poly, i) => {
+            const runs = []; let cur = [];
+            for (const [lat, lon] of poly) { const [x,y,v]=project(lat,lon); if (v) cur.push(`${x.toFixed(1)},${y.toFixed(1)}`); else if (cur.length) { runs.push(cur); cur=[]; } }
+            if (cur.length) runs.push(cur);
+            return runs.map((r, j) => r.length < 2 ? null : (
+              <polyline key={`${i}-${j}`} points={r.join(' ')} fill="rgba(230,220,200,0.12)" stroke="none" />
+            ));
+          })}
+        </g>
+        {/* country borders */}
+        <g>
+          {(countries || []).map((country, ci) =>
+            country.rings.map((poly, ri) => {
+              const runs = []; let cur = [];
+              for (const [lat, lon] of poly) { const [x,y,v]=project(lat,lon); if (v) cur.push(`${x.toFixed(1)},${y.toFixed(1)}`); else if (cur.length) { runs.push(cur); cur=[]; } }
+              if (cur.length) runs.push(cur);
+              return runs.map((r, j) => r.length < 2 ? null : (
+                <polyline key={`cb${ci}-${ri}-${j}`} points={r.join(' ')} fill="none" stroke="rgba(230,220,200,0.28)" strokeWidth="0.4" />
+              ));
+            })
+          )}
+        </g>
+        <circle cx={cx} cy={cy} r={R} fill="url(#shade)" pointerEvents="none" />
+        {firedEvents.map(evt => {
+          const [x, y, visible] = project(evt.coords[0], evt.coords[1]);
+          if (!visible) return null;
+          const age = currentTime - evt.t;
+          const ageScale = Math.max(0, 1 - age*2.5);
+          const baseR = 2 + (evt.severity || 1)*1.1;
+          const pulseR = baseR + ageScale*22;
+          const color = phaseColor(evt.phase);
+          const isActive = activeEvent && evt.id === activeEvent.id;
+          return (
+            <g key={evt.id}>
+              {ageScale > 0.02 && <circle cx={x} cy={y} r={pulseR} fill="url(#pulseGrad)" opacity={ageScale} />}
+              {isActive && (
+                <circle cx={x} cy={y} r={baseR+8} fill="none" stroke={color} strokeWidth="1" opacity="0.6">
+                  <animate attributeName="r" from={baseR+4} to={baseR+18} dur="1.4s" repeatCount="indefinite" />
+                  <animate attributeName="opacity" from="0.7" to="0" dur="1.4s" repeatCount="indefinite" />
+                </circle>
+              )}
+              <circle cx={x} cy={y} r={baseR} fill={color} stroke="#0a0907" strokeWidth="1" />
+            </g>
+          );
+        })}
+        <circle cx={cx} cy={cy} r={R} fill="url(#rim)" pointerEvents="none" />
+        <circle cx={cx} cy={cy} r={R} fill="none" stroke="rgba(230,220,200,0.18)" strokeWidth="0.8" />
+      </svg>
+    </div>
+  );
+};
+
+// ═══════════════════════ REGION MAP (single country / area + cities) ═══════
+// 2D map cropped to a bounding box. If MAP.bounds is omitted it auto-fits to
+// the event coordinates, so "pick a country" can be as simple as choosing the
+// region mode when all your key cities live there. Event coords are the cities.
+const RegionMap = ({ events, currentTime, activeEvent }) => {
+  const land      = useLand();
+  const countries = useCountries();
+  const W = 460, H = 460, PAD = 24;
+  const geo = events.filter(e => Array.isArray(e.coords));
+
+  let b = Array.isArray(MAP.bounds) && MAP.bounds.length === 4 ? MAP.bounds.slice() : null;
+  if (!b) {
+    if (geo.length) {
+      const lats = geo.map(e => e.coords[0]), lons = geo.map(e => e.coords[1]);
+      const padLat = Math.max(2, (Math.max.apply(null, lats) - Math.min.apply(null, lats)) * 0.18);
+      const padLon = Math.max(2, (Math.max.apply(null, lons) - Math.min.apply(null, lons)) * 0.18);
+      b = [Math.min.apply(null, lons) - padLon, Math.min.apply(null, lats) - padLat, Math.max.apply(null, lons) + padLon, Math.max.apply(null, lats) + padLat];
+    } else { b = [-180, -60, 180, 85]; }
+  }
+  const west = b[0], south = b[1], east = b[2], north = b[3];
+  const lonSpan = Math.max(0.0001, east - west), latSpan = Math.max(0.0001, north - south);
+  const s = Math.min((W - PAD*2) / lonSpan, (H - PAD*2) / latSpan);
+  const offX = (W - lonSpan*s) / 2, offY = (H - latSpan*s) / 2;
+  const project = (lat, lon) => [offX + (lon - west)*s, offY + (north - lat)*s];
+  const inBox = (lat, lon) => lon >= west-2 && lon <= east+2 && lat >= south-2 && lat <= north+2;
+
+  const firedEvents = events.filter(e => e.t <= currentTime && e.coords);
+  return (
+    <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center' }}>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ width:'100%', height:'100%', maxHeight:'100%' }}>
+        <defs>
+          <radialGradient id="rPulse"><stop offset="0%" stopColor={hexToRgba(C.accent,0.7)} /><stop offset="60%" stopColor={hexToRgba(C.accent,0.18)} /><stop offset="100%" stopColor={hexToRgba(C.accent,0)} /></radialGradient>
+          <clipPath id="rClip"><rect x="0" y="0" width={W} height={H} /></clipPath>
+        </defs>
+        <rect x="0" y="0" width={W} height={H} fill="#0a0907" />
+        {/* graticule */}
+        <g clipPath="url(#rClip)" stroke="rgba(230,220,200,0.06)" strokeWidth="0.6" fill="none">
+          {(() => {
+            const lines = [];
+            const stepLat = niceStep(latSpan), stepLon = niceStep(lonSpan);
+            for (let la = Math.ceil(south/stepLat)*stepLat; la <= north; la += stepLat) { const a = project(la, west), c = project(la, east); lines.push(<line key={`la${la}`} x1={a[0]} y1={a[1]} x2={c[0]} y2={c[1]} />); }
+            for (let lo = Math.ceil(west/stepLon)*stepLon; lo <= east; lo += stepLon) { const a = project(south, lo), c = project(north, lo); lines.push(<line key={`lo${lo}`} x1={a[0]} y1={a[1]} x2={c[0]} y2={c[1]} />); }
+            return lines;
+          })()}
+        </g>
+        {/* land fill */}
+        <g clipPath="url(#rClip)">
+          {(land || []).map((poly, i) => {
+            if (!poly.some(([la, lo]) => inBox(la, lo))) return null;
+            const pts = poly.map(([la, lo]) => { const p = project(la, lo); return `${p[0].toFixed(1)},${p[1].toFixed(1)}`; }).join(' ');
+            return <polyline key={i} points={pts} fill="rgba(230,220,200,0.10)" stroke="none" />;
+          })}
+        </g>
+        {/* country borders + optional highlight */}
+        <g clipPath="url(#rClip)">
+          {(countries || []).map((country, ci) => {
+            const isHL = MAP.country != null && String(country.id) === String(MAP.country);
+            return country.rings.map((poly, ri) => {
+              if (!poly.some(([la, lo]) => inBox(la, lo))) return null;
+              const pts = poly.map(([la, lo]) => { const p = project(la, lo); return `${p[0].toFixed(1)},${p[1].toFixed(1)}`; }).join(' ');
+              return <polyline key={`c${ci}-${ri}`} points={pts}
+                fill={isHL ? 'rgba(220,180,100,0.18)' : 'none'}
+                stroke={isHL ? 'rgba(212,160,60,0.65)' : 'rgba(230,220,200,0.35)'}
+                strokeWidth={isHL ? '0.9' : '0.5'}
+                strokeLinejoin="round" />;
+            });
+          })}
+        </g>
+        <rect x="0" y="0" width={W} height={H} fill="none" stroke="rgba(230,220,200,0.18)" strokeWidth="1" />
+        {/* cities */}
+        <g clipPath="url(#rClip)">
+          {firedEvents.map(evt => {
+            const [x, y] = project(evt.coords[0], evt.coords[1]);
+            const age = currentTime - evt.t, ageScale = Math.max(0, 1 - age*2.5);
+            const baseR = 2.5 + (evt.severity || 1)*1.1, pulseR = baseR + ageScale*20;
+            const color = phaseColor(evt.phase), isActive = activeEvent && evt.id === activeEvent.id;
+            const cityLabel = String(evt.location || '').split(',')[0];
+            return (
+              <g key={evt.id}>
+                {ageScale > 0.02 && <circle cx={x} cy={y} r={pulseR} fill="url(#rPulse)" opacity={ageScale} />}
+                {isActive && (
+                  <circle cx={x} cy={y} r={baseR+8} fill="none" stroke={color} strokeWidth="1" opacity="0.6">
+                    <animate attributeName="r" from={baseR+4} to={baseR+18} dur="1.4s" repeatCount="indefinite" />
+                    <animate attributeName="opacity" from="0.7" to="0" dur="1.4s" repeatCount="indefinite" />
+                  </circle>
+                )}
+                <circle cx={x} cy={y} r={baseR} fill={color} stroke="#0a0907" strokeWidth="1" />
+                {(isActive || ageScale > 0.25) && cityLabel && (
+                  <text x={x + baseR + 4} y={y + 3} fill={isActive ? C.ink : 'rgba(230,220,200,0.6)'} fontFamily={F.mono} fontSize="9" style={{ letterSpacing: '0.04em' }}>{cityLabel}</text>
+                )}
+              </g>
+            );
+          })}
+        </g>
+      </svg>
+    </div>
+  );
+};
+const niceStep = (span) => { const r = span / 5; const p = Math.pow(10, Math.floor(Math.log10(r))); const m = r / p; return (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10) * p; };
+
+// ═══════════════════════ TIMELINE TRACK ═══════════════════════
+const TimelineTrack = ({ events, phases, currentTime, setCurrentTime, activeId, setActiveId, setPlaying }) => {
+  const trackRef = React.useRef(null);
+  const [hoverT, setHoverT] = React.useState(null);
+  const [dragging, setDragging] = React.useState(false);
+
+  const tFromEvent = (e) => { const r = trackRef.current.getBoundingClientRect(); return Math.max(0, Math.min(1, (e.clientX - r.left)/r.width)); };
+  const onMove = (e) => { if (!trackRef.current) return; const t = tFromEvent(e); if (dragging) setCurrentTime(t); else setHoverT(t); };
+  const onDown = (e) => { if (!trackRef.current) return; setCurrentTime(tFromEvent(e)); setDragging(true); setPlaying(false); };
+
+  React.useEffect(() => {
+    if (!dragging) return;
+    const up = () => setDragging(false);
+    const move = (e) => { if (trackRef.current) setCurrentTime(tFromEvent(e)); };
+    window.addEventListener('mouseup', up); window.addEventListener('mousemove', move);
+    return () => { window.removeEventListener('mouseup', up); window.removeEventListener('mousemove', move); };
+  }, [dragging]);
+
+  // Auto-sampled ticks across the chronology
+  const ticks = useMemo(() => {
+    if (!events.length) return [];
+    const N = Math.min(9, events.length), out = [], seen = new Set();
+    for (let i = 0; i < N; i++) {
+      const idx = Math.round(i * (events.length - 1) / Math.max(1, N - 1));
+      const e = events[idx];
+      const key = Math.round(e.t * 100);
+      if (seen.has(key)) continue; seen.add(key);
+      out.push({ t: e.t, label: shortDate(e.dateLabel) });
+    }
+    return out;
+  }, [events]);
+
+  const firstC = phaseColor(phases[0] && phases[0].id);
+  const lastC  = phaseColor(phases[phases.length-1] && phases[phases.length-1].id);
+
+  return (
+    <div style={{ width:'100%', position:'relative' }}>
+      {/* Phase labels */}
+      <div style={{ position:'relative', height:18, marginBottom:4 }}>
+        {phases.map(p => (
+          <div key={p.id} style={{ position:'absolute', left:`${p.start*100}%`, width:`${(p.end-p.start)*100}%`, top:0, paddingLeft:8,
+            fontFamily:F.mono, fontSize:9, letterSpacing:'0.14em', textTransform:'uppercase',
+            color: phaseColor(p.id), fontWeight:700, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+            <span>{p.label}</span>
+            {p.range && <span style={{ opacity:0.55, marginLeft:8, fontWeight:500 }}>{p.range}</span>}
+          </div>
+        ))}
+      </div>
+      {/* Ticks */}
+      <div style={{ position:'relative', height:16, marginBottom:6, fontFamily:F.mono, fontSize:9.5, color:'rgba(230,220,200,0.45)', letterSpacing:'0.08em' }}>
+        {ticks.map((tick, i) => (
+          <div key={i} style={{ position:'absolute', left:`${tick.t*100}%`,
+            transform: tick.t >= 0.999 ? 'translateX(-100%)' : tick.t <= 0.001 ? 'translateX(0)' : 'translateX(-50%)', whiteSpace:'nowrap' }}>
+            <span style={{ display:'inline-block', borderLeft:'1px solid rgba(230,220,200,0.25)', paddingLeft:4, paddingTop:1 }}>{tick.label}</span>
+          </div>
+        ))}
+      </div>
+      {/* Track */}
+      <div ref={trackRef} onMouseMove={onMove} onMouseLeave={() => setHoverT(null)} onMouseDown={onDown}
+        style={{ position:'relative', height:62, cursor:'pointer', userSelect:'none' }}>
+        {phases.map(p => (
+          <div key={p.id} style={{ position:'absolute', left:`${p.start*100}%`, width:`${(p.end-p.start)*100}%`, top:22, height:18,
+            background: hexToRgba(phaseColor(p.id), 0.14), borderLeft:'1px solid rgba(230,220,200,0.15)' }} />
+        ))}
+        <div style={{ position:'absolute', left:0, width:`${currentTime*100}%`, top:22, height:18,
+          background:`linear-gradient(90deg, ${hexToRgba(firstC,0.35)} 0%, ${hexToRgba(C.accent,0.5)} 50%, ${hexToRgba(lastC,0.25)} 100%)`,
+          pointerEvents:'none', mixBlendMode:'screen' }} />
+        <div style={{ position:'absolute', left:0, right:0, top:30, height:2, background:'rgba(230,220,200,0.25)', pointerEvents:'none' }} />
+        {events.map((evt, i) => {
+          const active = evt.id === activeId, fired = evt.t <= currentTime, color = phaseColor(evt.phase);
+          const stagger = (i % 2 === 0) ? -1 : 1;
+          return (
+            <div key={evt.id} onClick={(e) => { e.stopPropagation(); setActiveId(evt.id); setCurrentTime(evt.t); setPlaying(false); }}
+              style={{ position:'absolute', left:`${evt.t*100}%`, top: stagger>0?42:10, transform:'translateX(-50%)', cursor:'pointer', zIndex: active?20:10 }} title={evt.title}>
+              <div style={{ width: active?12:8, height: active?12:8, background: fired?color:'transparent', border:`1.5px solid ${color}`, borderRadius:'50%',
+                transition:'all 180ms', boxShadow: active?`0 0 0 4px ${color}33, 0 0 12px ${color}`:'none' }} />
+              <div style={{ position:'absolute', left:'50%', top: stagger>0?-12:8, height:14, width:1, background: fired?color:'rgba(230,220,200,0.2)', transform:'translateX(-50%)' }} />
+            </div>
+          );
+        })}
+        <div style={{ position:'absolute', left:`${currentTime*100}%`, top:0, bottom:0, width:2, transform:'translateX(-50%)', background:C.ink, pointerEvents:'none', boxShadow:'0 0 12px rgba(246,241,228,0.6)' }}>
+          <div style={{ position:'absolute', top:-4, left:'50%', transform:'translateX(-50%)', width:10, height:10, background:C.ink, clipPath:'polygon(0 0, 100% 0, 50% 100%)' }} />
+        </div>
+        {hoverT !== null && !dragging && (
+          <div style={{ position:'absolute', left:`${hoverT*100}%`, top:0, bottom:0, width:1, transform:'translateX(-50%)', background:'rgba(246,241,228,0.3)', pointerEvents:'none' }} />
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ═══════════════════════ DETAIL + LIST ═══════════════════════
+const MetaRow = ({ label, value, highlight }) => (
+  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', gap:16, padding:'6px 0', borderBottom:'1px dashed rgba(230,220,200,0.1)' }}>
+    <span style={{ fontFamily:F.mono, fontSize:10, letterSpacing:'0.14em', textTransform:'uppercase', color:'rgba(230,220,200,0.5)' }}>{label}</span>
+    <span style={{ fontFamily:F.mono, fontSize:13, color: highlight || C.ink, fontWeight:600, textAlign:'right' }}>{value}</span>
+  </div>
+);
+
+const SEV_LABELS = ['','LOW','MODERATE','HIGH','SEVERE','CRITICAL'];
+const EventDetail = ({ event }) => {
+  if (!event) return (
+    <div style={{ padding:24, color:'rgba(230,220,200,0.4)', fontFamily:F.mono, fontSize:12, letterSpacing:'0.04em' }}>
+      Scrub the timeline or click an event to inspect the record.
+    </div>
+  );
+  const color = phaseColor(event.phase);
+  return (
+    <div style={{ padding:'28px 32px 36px', fontFamily:F.body, color: C.fg, position:'relative', overflowY:'auto', height:'100%', boxSizing:'border-box' }}>
+      <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:20, fontFamily:F.mono, fontSize:10, letterSpacing:'0.16em', textTransform:'uppercase' }}>
+        {event.phase && <span style={{ padding:'3px 8px', background:color, color:'#13110e', fontWeight:700 }}>{phaseLabel(event.phase)}</span>}
+        {event.kind && <span style={{ color:'rgba(230,220,200,0.5)' }}>{kindLabel(event.kind)}</span>}
+        <span style={{ color:'rgba(230,220,200,0.4)', marginLeft:'auto', fontSize:10 }}>FILE #{String(event.id).toUpperCase()}</span>
+      </div>
+      {(event.dateLabel || event.location) && (
+        <div style={{ fontFamily:F.mono, fontSize:11, color:'rgba(230,220,200,0.55)', letterSpacing:'0.08em', marginBottom:6 }}>
+          {[event.dateLabel, event.location].filter(Boolean).join(' · ').toUpperCase()}
+        </div>
+      )}
+      <h2 style={{ margin:'0 0 18px 0', fontFamily:F.title, fontSize:34, fontWeight:500, lineHeight:1.08, letterSpacing:'-0.01em', color:C.ink }}>{event.title}</h2>
+      {showSeverity && event.severity && (
+        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:20, fontFamily:F.mono, fontSize:10, letterSpacing:'0.1em', color:'rgba(230,220,200,0.6)' }}>
+          <span>SEVERITY</span>
+          <div style={{ display:'flex', gap:3 }}>{[1,2,3,4,5].map(i => <div key={i} style={{ width:14, height:6, background: i<=event.severity?color:'rgba(230,220,200,0.12)' }} />)}</div>
+          <span style={{ color:'rgba(230,220,200,0.4)', marginLeft:8 }}>{SEV_LABELS[event.severity]}</span>
+        </div>
+      )}
+      {event.headline && (
+        <div style={{ borderLeft:`2px solid ${color}`, paddingLeft:16, marginBottom:22, fontFamily:F.title, fontSize:17, lineHeight:1.45, color:C.fg, fontStyle:'italic' }}>{event.headline}</div>
+      )}
+      {event.body && <div style={{ fontSize:14.5, lineHeight:1.65, color:'rgba(230,220,200,0.88)', marginBottom:22 }}>{event.body}</div>}
+      {(event.casualties || event.damageUSD || (showArtifacts && event.artifacts && event.artifacts.length)) && (
+        <div style={{ display:'grid', gridTemplateColumns:'1fr', gap:12, marginTop:24, paddingTop:20, borderTop:'1px solid rgba(230,220,200,0.12)' }}>
+          {event.casualties && <MetaRow label="Impact" value={event.casualties} />}
+          {event.damageUSD && <MetaRow label="Damage" value={event.damageUSD} highlight={color} />}
+          {showArtifacts && event.artifacts && event.artifacts.length > 0 && (
+            <div>
+              <div style={{ fontFamily:F.mono, fontSize:10, letterSpacing:'0.14em', textTransform:'uppercase', color:'rgba(230,220,200,0.45)', marginBottom:8 }}>Artifacts</div>
+              <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+                {event.artifacts.map((a, i) => (
+                  <span key={i} style={{ fontFamily:F.mono, fontSize:11, padding:'3px 8px', background:'rgba(230,220,200,0.06)', border:'1px solid rgba(230,220,200,0.14)', color:C.fg }}>{a}</span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const EventList = ({ events, activeId, onSelect, currentTime }) => {
+  const listRef = React.useRef(null), activeRef = React.useRef(null);
+  React.useEffect(() => {
+    if (activeRef.current && listRef.current) {
+      const li = activeRef.current, ul = listRef.current;
+      const liTop = li.offsetTop - ul.offsetTop, liBottom = liTop + li.offsetHeight;
+      if (liTop < ul.scrollTop) ul.scrollTop = liTop - 8;
+      else if (liBottom > ul.scrollTop + ul.clientHeight) ul.scrollTop = liBottom - ul.clientHeight + 8;
+    }
+  }, [activeId]);
+  return (
+    <div ref={listRef} style={{ height:'100%', overflowY:'auto', padding:'16px 0' }}>
+      <div style={{ padding:'0 20px 12px', fontFamily:F.mono, fontSize:10, letterSpacing:'0.18em', textTransform:'uppercase', color:'rgba(230,220,200,0.4)' }}>
+        Chronology · {events.length} records
+      </div>
+      {events.map(evt => {
+        const active = evt.id === activeId, fired = evt.t <= currentTime, color = phaseColor(evt.phase);
+        return (
+          <div key={evt.id} ref={active?activeRef:null} onClick={() => onSelect(evt)}
+            style={{ padding:'10px 20px 10px 16px', borderLeft:`3px solid ${active?color:fired?color+'66':'transparent'}`,
+              background: active?'rgba(230,220,200,0.05)':'transparent', cursor:'pointer', transition:'background 150ms', display:'flex', gap:10, alignItems:'flex-start' }}
+            onMouseEnter={(e)=>{ if(!active) e.currentTarget.style.background='rgba(230,220,200,0.03)'; }}
+            onMouseLeave={(e)=>{ if(!active) e.currentTarget.style.background='transparent'; }}>
+            <div style={{ fontFamily:F.mono, fontSize:9, letterSpacing:'0.08em', color: fired?'rgba(230,220,200,0.55)':'rgba(230,220,200,0.25)', width:54, flexShrink:0, paddingTop:2, lineHeight:1.4 }}>
+              {shortDate(evt.dateLabel)}
+            </div>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontFamily:F.body, fontSize:12.5, fontWeight: active?600:500, color: active?C.ink:fired?C.fg:'rgba(230,220,200,0.45)', lineHeight:1.3 }}>{evt.title}</div>
+              {evt.kind && <div style={{ fontFamily:F.mono, fontSize:9, color: color+'bb', letterSpacing:'0.12em', marginTop:3, textTransform:'uppercase' }}>{kindLabel(evt.kind)}</div>}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+// ═══════════════════════ CHROME ═══════════════════════
+const Stat = ({ label, value, accent, mono }) => (
+  <div style={{ display:'flex', flexDirection:'column', gap:2, minWidth:0 }}>
+    <span style={{ fontFamily:F.mono, fontSize:9, letterSpacing:'0.14em', textTransform:'uppercase', color:'rgba(230,220,200,0.45)' }}>{label}</span>
+    <span style={{ fontFamily: mono!==false?F.mono:F.body, fontSize:13, fontWeight:600, color: accent?C.accent:C.ink, fontVariantNumeric:'tabular-nums' }}>{value}</span>
+  </div>
+);
+const LegendDot = ({ color, label }) => (
+  <div style={{ display:'flex', alignItems:'center', gap:6 }}><div style={{ width:8, height:8, borderRadius:'50%', background:color }} /><span>{label}</span></div>
+);
+const PlayButton = ({ playing, onClick }) => (
+  <button onClick={onClick} style={{ width:40, height:40, background: playing?'rgba(230,220,200,0.1)':C.accent, border:'1px solid rgba(230,220,200,0.2)', color: playing?C.ink:'#0a0907', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', borderRadius:2 }} title={playing?'Pause (space)':'Play (space)'}>
+    {playing ? <svg width="12" height="14" viewBox="0 0 14 16"><rect x="1" y="0" width="4" height="16" fill="currentColor"/><rect x="9" y="0" width="4" height="16" fill="currentColor"/></svg>
+             : <svg width="12" height="14" viewBox="0 0 14 16"><path d="M1 0 L13 8 L1 16 Z" fill="currentColor"/></svg>}
+  </button>
+);
+const ctrlBtnStyle = { width:34, height:34, background:'rgba(230,220,200,0.04)', border:'1px solid rgba(230,220,200,0.14)', color:'rgba(230,220,200,0.7)', cursor:'pointer', fontSize:14, fontFamily:F.mono, borderRadius:2 };
+const SpeedControl = ({ speed, setSpeed }) => (
+  <div style={{ display:'flex', gap:1, fontFamily:F.mono, fontSize:10 }}>
+    {[1,2,4,8].map(s => (
+      <button key={s} onClick={() => setSpeed(s)} style={{ padding:'8px 10px', background: speed===s?'#e6dcc8':'rgba(230,220,200,0.04)', color: speed===s?'#0a0907':'rgba(230,220,200,0.7)', border:'1px solid rgba(230,220,200,0.14)', cursor:'pointer', fontWeight: speed===s?700:500 }}>{s}×</button>
+    ))}
+  </div>
+);
+
+// ═══════════════════════ APP ═══════════════════════
+const App = () => {
+  const events = EVENTS, phases = PHASES;
+  const firstId = events[0] ? events[0].id : null;
+  const lsKey = (k) => `cdb:${slug}:${k}`;
+  const [currentTime, setCurrentTimeRaw] = useState(() => { try { const v = parseFloat(localStorage.getItem(lsKey('t')) || '0'); return isFinite(v)?Math.max(0,Math.min(1,v)):0; } catch { return 0; } });
+  const [activeId, setActiveIdRaw] = useState(() => { try { return localStorage.getItem(lsKey('active')) || firstId; } catch { return firstId; } });
+  const [playing, setPlaying] = useState(false);
+  const [speed, setSpeed] = useState(1);
+
+  const setCurrentTime = useCallback((t) => { setCurrentTimeRaw(t); try { localStorage.setItem(lsKey('t'), String(t)); } catch {} }, []);
+  const setActiveId = useCallback((id) => { setActiveIdRaw(id); try { localStorage.setItem(lsKey('active'), id); } catch {} }, []);
+
+  useEffect(() => {
+    const upcoming = events.filter(e => e.t <= currentTime + 0.001);
+    if (upcoming.length) { const latest = upcoming[upcoming.length-1]; if (latest.id !== activeId) setActiveId(latest.id); }
+  }, [currentTime]);
+
+  useEffect(() => {
+    if (!playing) return;
+    let raf, last = null;
+    const step = (ts) => {
+      if (last == null) last = ts;
+      const dt = (ts - last)/1000; last = ts;
+      setCurrentTimeRaw(prev => {
+        const next = prev + (dt/60)*speed;
+        if (next >= 1) { setPlaying(false); try { localStorage.setItem(lsKey('t'), '1'); } catch {} return 1; }
+        try { localStorage.setItem(lsKey('t'), String(next)); } catch {}
+        return next;
+      });
+      raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [playing, speed]);
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (e.code === 'Space' && showPlayback) { e.preventDefault(); setPlaying(p => !p); }
+      else if (e.code === 'ArrowLeft') { e.preventDefault(); const idx = events.findIndex(x=>x.id===activeId); const n = events[Math.max(0,idx-1)]; if (n){ setActiveId(n.id); setCurrentTime(n.t); setPlaying(false); } }
+      else if (e.code === 'ArrowRight') { e.preventDefault(); const idx = events.findIndex(x=>x.id===activeId); const n = events[Math.min(events.length-1,idx+1)]; if (n){ setActiveId(n.id); setCurrentTime(n.t); setPlaying(false); } }
+      else if (e.key === '0' || e.code === 'Home') { setCurrentTime(0); if (firstId) setActiveId(firstId); setPlaying(false); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [activeId, events]);
+
+  const active = events.find(e => e.id === activeId);
+  const firedCount = events.filter(e => e.t <= currentTime).length;
+  const [vw, setVw] = useState(() => typeof window !== 'undefined' ? window.innerWidth : 1400);
+  useEffect(() => { const onR = () => setVw(window.innerWidth); window.addEventListener('resize', onR); return () => window.removeEventListener('resize', onR); }, []);
+  const compact = vw < 1400;
+  const leftW = compact ? 220 : 280, rightW = compact ? 360 : 460;
+  const currentPhase = phases.find(p => currentTime >= p.start && currentTime < p.end) || phases[phases.length-1] || {};
+
+  // Adaptive column layout: present blocks + map side (alternate layouts)
+  const mapSide = LAYOUT.mapSide === 'left' ? 'left' : 'right';
+  const order = (mapSide === 'left' ? ['map','detail','list'] : ['list','detail','map'])
+    .filter(k => k === 'detail' || (k === 'list' && showList) || (k === 'map' && showMap));
+  const colOf = {}; order.forEach((k, i) => { colOf[k] = i + 1; });
+  const widthOf = { list: `${leftW}px`, detail: '1fr', map: `${rightW}px` };
+  const gridCols = order.map(k => widthOf[k]).join(' ');
+  const listCol = colOf.list, detailCol = colOf.detail, mapCol = colOf.map;
+  const sep = `1px solid ${C.line}`;
+  const edge = (selfCol, otherCol) => otherCol == null ? {} : (otherCol > selfCol ? { borderRight: sep } : { borderLeft: sep });
+
+  return (
+    <div style={{ height:'100%', width:'100%', display:'grid', gridTemplateRows:'auto 36vh 1fr', gridTemplateColumns: gridCols, background:C.bg, color:C.fg, fontFamily:F.body, overflow:'hidden' }}>
+      {/* Header */}
+      <header style={{ gridColumn:'1 / -1', borderBottom:`1px solid ${C.line}`, padding:'14px 28px 12px', display:'flex', alignItems:'center', gap:20, background:C.panel, flexWrap:'wrap' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+          <div style={{ width:10, height:10, background:C.accent, borderRadius:1, animation:'pulse 1.6s infinite' }} />
+          {META.badge && <div style={{ fontFamily:F.mono, fontSize:10, letterSpacing:'0.2em', color:'rgba(230,220,200,0.55)', textTransform:'uppercase' }}>{META.badge}</div>}
+        </div>
+        <div style={{ fontFamily:F.title, fontSize:22, fontWeight:500, letterSpacing:'-0.01em', color:C.ink }}>
+          {META.title || 'Timeline'}{META.subtitle && <span style={{ color:'rgba(230,220,200,0.4)', fontStyle:'italic', fontWeight:400 }}> {META.subtitle}</span>}
+        </div>
+        <div style={{ marginLeft:'auto', display:'flex', gap:24, alignItems:'center', flexWrap:'wrap' }}>
+          <Stat label="Records" value={`${firedCount} / ${events.length}`} />
+          {currentPhase.label && <Stat label="Phase" value={phaseLabel(currentPhase.id)} mono={false} accent />}
+          <Stat label="Playhead" value={`${Math.round(currentTime*100)}%`} />
+        </div>
+      </header>
+
+      {/* Timeline hero */}
+      <section style={{ gridColumn:'1 / -1', gridRow:'2 / 3', background:`linear-gradient(180deg, ${C.panel} 0%, ${C.bg} 100%)`, borderBottom:`1px solid ${C.line}`, padding:'22px 40px 24px', display:'flex', flexDirection:'column', gap:14, overflow:'hidden' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:16, flexWrap:'wrap' }}>
+          {currentPhase.label && (
+            <span style={{ padding:'4px 12px', background: phaseColor(currentPhase.id), color:'#0a0907', fontFamily:F.mono, fontWeight:700, letterSpacing:'0.18em', textTransform:'uppercase', fontSize:10 }}>
+              ▸ PHASE · {phaseLabel(currentPhase.id)}
+            </span>
+          )}
+          {currentPhase.range && <span style={{ fontFamily:F.mono, fontSize:11, letterSpacing:'0.1em', color:'rgba(230,220,200,0.6)' }}>{currentPhase.range}</span>}
+          {active && <span style={{ marginLeft:10, fontFamily:F.title, fontSize:15, fontStyle:'italic', color:'rgba(230,220,200,0.72)' }}>
+            <span style={{ color:'rgba(230,220,200,0.4)' }}>viewing · </span>{active.dateLabel}</span>}
+          {showPlayback && (
+            <div style={{ marginLeft:'auto', display:'flex', gap:10, alignItems:'center' }}>
+              <PlayButton playing={playing} onClick={() => setPlaying(p => !p)} />
+              <button onClick={() => { setCurrentTime(0); if (firstId) setActiveId(firstId); setPlaying(false); }} style={ctrlBtnStyle} title="Reset">⏮</button>
+              <SpeedControl speed={speed} setSpeed={setSpeed} />
+            </div>
+          )}
+        </div>
+        <div style={{ flex:1, minHeight:0, display:'flex', alignItems:'center' }}>
+          <div style={{ width:'100%' }}>
+            <TimelineTrack events={events} phases={phases} currentTime={currentTime} setCurrentTime={setCurrentTime} activeId={activeId} setActiveId={setActiveId} setPlaying={setPlaying} />
+          </div>
+        </div>
+        <div style={{ fontFamily:F.mono, fontSize:9.5, letterSpacing:'0.14em', color:'rgba(230,220,200,0.38)', textTransform:'uppercase', textAlign:'center' }}>
+          ← → step events &nbsp;·&nbsp; {showPlayback ? 'space play/pause · ' : ''}drag track to scrub &nbsp;·&nbsp; click pins to jump
+        </div>
+      </section>
+
+      {/* Row 3 */}
+      {showList && (
+        <aside style={{ gridRow:'3 / 4', gridColumn: String(listCol), ...edge(listCol, detailCol), overflow:'hidden', background:'rgba(10,9,7,0.6)', minHeight:0 }}>
+          <EventList events={events} activeId={activeId} onSelect={(e) => { setActiveId(e.id); setCurrentTime(e.t); setPlaying(false); }} currentTime={currentTime} />
+        </aside>
+      )}
+      <main style={{ gridRow:'3 / 4', gridColumn: String(detailCol), overflow:'hidden', background:'rgba(10,9,7,0.4)', minHeight:0, ...(mapSide==='right' ? edge(detailCol, mapCol) : edge(detailCol, listCol)) }}>
+        <EventDetail event={active} />
+      </main>
+      {showMap && (
+        <section style={{ gridRow:'3 / 4', gridColumn: String(mapCol), ...edge(mapCol, detailCol), padding:'20px 24px 22px', display:'flex', flexDirection:'column', gap:12, overflow:'hidden', minWidth:0, minHeight:0, background:'radial-gradient(ellipse at center, rgba(20,18,15,0.8) 0%, rgba(10,9,7,1) 70%)' }}>
+          <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', fontFamily:F.mono, fontSize:9.5, letterSpacing:'0.18em', textTransform:'uppercase', color:'rgba(230,220,200,0.55)' }}>
+            <span>{MAP.label || (MAP.mode === 'region' ? 'Incident Map' : 'Incident Globe')}</span>{active && active.location && <span style={{ color:'rgba(230,220,200,0.4)' }}>{String(active.location).split(',')[0]}</span>}
+          </div>
+          <div style={{ flex:1, minHeight:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
+            {MAP.mode === 'region'
+              ? <RegionMap events={events} currentTime={currentTime} activeEvent={active} />
+              : <Globe events={events} currentTime={currentTime} activeEvent={active} />}
+          </div>
+          <div style={{ display:'flex', gap:16, justifyContent:'center', flexWrap:'wrap', fontFamily:F.mono, fontSize:9.5, letterSpacing:'0.14em', textTransform:'uppercase', color:'rgba(230,220,200,0.5)' }}>
+            {phases.map(p => <LegendDot key={p.id} color={phaseColor(p.id)} label={phaseLabel(p.id)} />)}
+          </div>
+        </section>
+      )}
+    </div>
+  );
+};
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       SHELL LOGIC — config management, live preview, file I/O, export.
+       ════════════════════════════════════════════════════════════════ -->
+  <script>
+  (function () {
+    'use strict';
+
+    // ── Built-in example: the NotPetya reconstruction ──
+    const DEFAULT_CONFIG = {
+      meta: {
+        title: 'NotPetya',
+        subtitle: '— an incident reconstruction',
+        badge: 'CLASSIFIED · DOSSIER 2017-27/06',
+        lang: 'en',
+      },
+      theme: { bg: '#0d0b08', fg: '#e6dcc8', accent: '#dc3c28', panel: '#0a0907' },
+      layout: { showMap: true, showEventList: true, showSeverity: true, showArtifacts: true, showPlayback: true },
+      phases: [
+        { id: 'prelude',    label: 'Pre-crisis · Weaponization',       range: '2013 — May 2017',     start: 0.00, end: 0.40, color: '#d4a03c' },
+        { id: 'detonation', label: 'The Crisis',                       range: 'Jun 27, 2017 — Day 0', start: 0.40, end: 0.68, color: '#dc3c28' },
+        { id: 'fallout',    label: 'Post-crisis · Years-long fallout', range: 'Jul 2017 — 2023',      start: 0.68, end: 1.00, color: '#b4afa5' },
+      ],
+      events: [
+        { id: 'e01', phase: 'prelude', dateLabel: 'c. 2013', t: 0.00, title: `EternalBlue is developed inside the NSA`, location: `Fort Meade, Maryland`, coords: [39.1,-76.7], severity: 1, kind: 'intelligence', headline: `A zero-day SMBv1 exploit is weaponized inside the NSA's Tailored Access Operations unit.`, body: `Offensive engineers at the NSA weaponize a flaw in Microsoft's Server Message Block (SMBv1) protocol. The exploit — ETERNALBLUE — enables remote code execution on almost any unpatched Windows machine. It is paired with a backdoor installer (DOUBLEPULSAR) and used in live operations for years. Microsoft is not told.`, artifacts: [`ETERNALBLUE (exploit)`, `DOUBLEPULSAR (implant)`, `FUZZBUNCH (framework)`] },
+        { id: 'e02', phase: 'prelude', dateLabel: 'August 13, 2016', t: 0.05, title: `The Shadow Brokers appear`, location: `Anonymous / online`, coords: [55.0,37.0], severity: 2, kind: 'leak', headline: `An anonymous group begins auctioning stolen NSA cyberweapons.`, body: `A group calling itself "The Shadow Brokers" posts a sample of tools stolen from the NSA-linked Equation Group and announces an auction. Researchers confirm the sample is real. Russian intelligence is widely suspected. The auction fails.`, artifacts: [`Public GitHub dump`, `Bitcoin auction wallet`] },
+        { id: 'e03', phase: 'prelude', dateLabel: 'March 14, 2017', t: 0.12, title: `Microsoft ships MS17-010`, location: `Redmond, WA`, coords: [47.6,-122.1], severity: 2, kind: 'defense', headline: `Microsoft silently patches the exact SMBv1 flaws EternalBlue exploits.`, body: `Security bulletin MS17-010 quietly closes the SMBv1 vulnerabilities. No CVE reporter is named. Observers conclude the NSA, fearing imminent leak, warned Microsoft. The patch ships — but worldwide patching cycles take months.`, artifacts: [`MS17-010 bulletin`, `Windows Update rollout`] },
+        { id: 'e04', phase: 'prelude', dateLabel: 'April 14, 2017', t: 0.19, title: `"Lost in Translation" dump — EternalBlue goes public`, location: `Public internet`, coords: [50.1,14.4], severity: 3, kind: 'leak', headline: `The Shadow Brokers publish the full NSA toolkit. A nation-state exploit is now globally accessible.`, body: `On Good Friday, Shadow Brokers release a trove titled "Lost in Translation" — EternalBlue, DoublePulsar and a chaining framework. Within 24 hours, scanners map hundreds of thousands of vulnerable hosts. The floor collapses beneath every unpatched Windows machine on the internet.`, artifacts: [`Public exploit code`, `DoublePulsar beacons in the wild`] },
+        { id: 'e05', phase: 'prelude', dateLabel: 'May 12, 2017', t: 0.26, title: `WannaCry — the warning shot`, location: `Global, DPRK-attributed`, coords: [39.0,125.7], severity: 4, kind: 'attack', headline: `A ransomware worm using EternalBlue cripples the UK NHS, Telefónica, FedEx and 200,000+ hosts.`, body: `WannaCry spreads worldwide in hours, encrypting files and demanding $300 in Bitcoin. UK NHS hospitals reroute ambulances. A researcher registers a hard-coded kill-switch domain and halts it by accident. The signal is loud — and the world ignores it.`, artifacts: [`Kill-switch domain`, `Emergency XP patch`], casualties: `~200,000 infections, 150 countries`, damageUSD: `$4–8B (est.)` },
+        { id: 'e06', phase: 'prelude', dateLabel: 'May 18, 2017', t: 0.32, title: `XData — the rehearsal`, location: `Ukraine`, coords: [50.45,30.52], severity: 2, kind: 'intrusion', headline: `Ukrainian companies hit by XData ransomware — propagating through the M.E.Doc update channel.`, body: `A first attack dubbed XData spreads in Ukraine via a compromised M.E.Doc update. In retrospect this is an access-validation phase: Sandworm has already compromised the Linkos Group update infrastructure and is testing propagation and lateral movement.`, artifacts: [`M.E.Doc update infrastructure`, `Stolen code-signing keys`] },
+        { id: 'e07', phase: 'prelude', dateLabel: 'May–June 2017', t: 0.36, title: `Covert preparation`, location: `Kyiv, Ukraine`, coords: [50.45,30.52], severity: 2, kind: 'intrusion', headline: `Sandworm (GRU Unit 74455) retains persistence inside Linkos Group.`, body: `Attackers keep covert access to the M.E.Doc update servers and weaponize a payload combining EternalBlue + EternalRomance + Mimikatz credential harvesting + lateral movement via PsExec and WMIC — a hybrid designed to pierce any segmented network. The ransom note is a deliberate misdirection.` },
+        { id: 'e08', phase: 'detonation', dateLabel: 'Jun 27 · morning · Kyiv', t: 0.42, title: `Day 0 — the poisoned M.E.Doc update`, location: `Kyiv, Ukraine`, coords: [50.45,30.52], severity: 5, kind: 'attack', headline: `A malicious update ships to every installed copy of Ukraine's dominant tax-accounting software.`, body: `One day before Ukraine's Constitution Day holiday, Sandworm pushes the update. Thousands of Ukrainian businesses, banks and government agencies install it automatically. Any company filing taxes in Ukraine runs M.E.Doc — creating systemic exposure. Infection begins within minutes.`, artifacts: [`ezvit.exe (M.E.Doc updater)`, `perfc.dat payload`, `Fake ransom note`] },
+        { id: 'e09', phase: 'detonation', dateLabel: 'Jun 27 · late morning', t: 0.46, title: `Ukrainian critical infrastructure collapses`, location: `Kyiv / nationwide`, coords: [50.45,30.52], severity: 5, kind: 'impact', headline: `Within an hour, ~10% of all computers in Ukraine are wiped.`, body: `Oschadbank, Ukrposhta, Kyiv Metro, Boryspil Airport, Chernobyl radiation monitors, Ukrenergo grid terminals, ministries — all hit simultaneously. ATMs display skulls. Chernobyl radiation sensors switch to manual. Ukraine's deputy prime minister posts a photo of a blue screen and writes "Ta-daa!"`, casualties: `~10% of Ukrainian computers wiped` },
+        { id: 'e10', phase: 'detonation', dateLabel: 'Jun 27 · ~noon UTC', t: 0.50, title: `Maersk: 17 minutes to global blackout`, location: `Copenhagen → worldwide`, coords: [55.68,12.57], severity: 5, kind: 'impact', headline: `The world's largest shipping company loses every domain controller — except one, by accident.`, body: `A.P. Møller-Maersk handles ~20% of global container shipping. In 17 minutes NotPetya destroys 49,000 laptops, 4,000 servers, and all 150 domain controllers. A single domain controller in Ghana survived — offline during a power outage. Its hard drive is flown to the UK under escort and becomes the seed of the entire rebuild.`, artifacts: [`The Ghana domain controller`, `Handwritten bills of lading`], casualties: `49,000 laptops + 4,000 servers destroyed`, damageUSD: `$300M` },
+        { id: 'e11', phase: 'detonation', dateLabel: 'Jun 27 · afternoon', t: 0.54, title: `Merck: vaccine production halts`, location: `Kenilworth, NJ / global`, coords: [40.68,-74.29], severity: 5, kind: 'impact', headline: `Merck loses ~40,000 devices. HPV vaccine Gardasil production stops.`, body: `Pharmaceutical giant Merck is among the first US multinationals hit. Research labs, manufacturing lines and supply-chain systems are all wiped. The CDC loans Merck doses of Gardasil from the US strategic stockpile. Merck will later win the landmark $1.4 billion insurance case.`, casualties: `~40,000 devices destroyed`, damageUSD: `$870M direct / $1.4B claim` },
+        { id: 'e12', phase: 'detonation', dateLabel: 'Jun 27 · afternoon', t: 0.57, title: `FedEx / TNT Express — Europe paralyzed`, location: `Hoofddorp, Netherlands`, coords: [52.30,4.69], severity: 4, kind: 'impact', headline: `FedEx's European subsidiary TNT is comprehensively wiped. Some systems never fully recover.`, body: `TNT Express — acquired by FedEx a year earlier — reverts to manual processes: paper labels, phone calls, physically couriering package data between hubs. Integration with FedEx's systems is set back by years. FedEx books $400M in NotPetya-related damages.`, damageUSD: `$400M` },
+        { id: 'e13', phase: 'detonation', dateLabel: 'Jun 27 · afternoon', t: 0.60, title: `Mondelēz, Saint-Gobain, Reckitt, WPP, Rosneft…`, location: `Global`, coords: [48.85,2.35], severity: 4, kind: 'impact', headline: `The worm jumps every VPN it finds. Oreo, Cadbury, Durex, Nurofen production halts.`, body: `Mondelēz loses 1,700 servers and 24,000 laptops. Saint-Gobain loses €250M. Reckitt Benckiser reports £100M of lost revenue. WPP is hit. Rosneft — a Russian state oil major — is hit too. Russia is not spared from its own weapon.`, casualties: `Dozens of multinationals`, damageUSD: `€250M · £100M · $180M` },
+        { id: 'e14', phase: 'detonation', dateLabel: 'Jun 27 · evening', t: 0.63, title: `Global incident declared`, location: `Worldwide`, coords: [51.51,-0.12], severity: 4, kind: 'defense', headline: `Major cybersecurity firms declare a global incident. Companies disconnect at scale.`, body: `Mandiant, Kaspersky, ESET and Cisco Talos issue urgent advisories. Companies begin disconnecting networks and pulling cables from critical systems. Key signals emerge: no kill switch, a single Bitcoin wallet, and this looks nothing like profit-driven crime.` },
+        { id: 'e15', phase: 'detonation', dateLabel: 'Jun 28 · Day +1', t: 0.66, title: `Supply-chain compromise confirmed`, location: `Microsoft MSRC · researchers`, coords: [44.43,26.10], severity: 3, kind: 'analysis', headline: `Microsoft and Cybereason identify M.E.Doc as Patient Zero. A "perfc" vaccine is published.`, body: `Microsoft publishes analysis pointing to the M.E.Doc update as the entry vector. Researchers discover a local vaccine — a read-only C:\\Windows\\perfc file — but the wave has already passed. Thousands of companies in 65+ countries are affected.` },
+        { id: 'e16', phase: 'fallout', dateLabel: 'Jun 29–30 · Days +2/+3', t: 0.70, title: `It is not ransomware — it is a wiper`, location: `Global research community`, coords: [31.78,35.21], severity: 3, kind: 'analysis', headline: `Reverse-engineering proves recovery is impossible. The ransom channel collapses.`, body: `The malware overwrites the Master Boot Record and Master File Table with no recoverable mapping. The "installation ID" is random bytes. The narrative pivots: this was never cybercrime — it was a destructive cyber operation dressed as one. Kaspersky names it NotPetya.` },
+        { id: 'e17', phase: 'fallout', dateLabel: 'Jul 1 · Day +4', t: 0.73, title: `Ukraine points at Russia`, location: `Kyiv`, coords: [50.45,30.52], severity: 2, kind: 'attribution', headline: `Early government signals attribute the attack to Russian actors.`, body: `The SBU and Ukrainian officials publicly accuse Russian intelligence. The CCDCOE Tallinn-based legal toolkit begins assessing its status under international law — a question that will shape insurance disputes for a decade.` },
+        { id: 'e18', phase: 'fallout', dateLabel: 'First week of July', t: 0.76, title: `Peak operational chaos`, location: `Worldwide`, coords: [40.71,-74.01], severity: 4, kind: 'impact', headline: `Global supply chains, logistics, pharma and manufacturing operate in degraded mode for weeks.`, body: `Cumulative damage estimates cross $10 billion — making NotPetya the most expensive cyber event in history. Ports accumulate backlogs. Pharmacy supply is tight. Manufacturing plants run on paper. Some firms never restore full function.`, damageUSD: `$10B+ global` },
+        { id: 'e19', phase: 'fallout', dateLabel: '~10 days after', t: 0.79, title: `Maersk rebuilds in ten days`, location: `Global Maersk operations`, coords: [51.51,-0.13], severity: 2, kind: 'recovery', headline: `10 days · 4,000 new servers · 45,000 new PCs — reinstalled from the Ghana domain controller.`, body: `Supported by Deloitte and thousands of contractors, Maersk rebuilds its entire global network in ten days using the single surviving Ghana DC as seed. Through the outage the company processes shipping manually on WhatsApp and Gmail.`, damageUSD: `$300M` },
+        { id: 'e20', phase: 'fallout', dateLabel: 'February 15, 2018', t: 0.83, title: `Five-Eyes attribution: Russian military`, location: `Washington · London · Canberra`, coords: [51.50,-0.12], severity: 3, kind: 'attribution', headline: `The White House, UK, Canada, Australia and New Zealand blame GRU Unit 74455 — "Sandworm."`, body: `In a coordinated Five-Eyes statement, NotPetya is attributed to the Russian military. The White House calls it "the most destructive and costly cyber-attack in history." Total damages are pegged at over $10 billion.`, damageUSD: `$10B+ (global est.)` },
+        { id: 'e21', phase: 'fallout', dateLabel: '2018 — 2020', t: 0.86, title: `Insurers invoke "act of war"`, location: `New Jersey · Illinois · London`, coords: [40.71,-74.01], severity: 4, kind: 'insurance', headline: `Mondelēz sues Zurich. Merck sues ACE. Century-old war exclusions are dusted off.`, body: `Mondelēz's $100M claim and Merck's $1.4B claim are denied under "hostile or warlike action" exclusions written for conventional warfare. Insurers argue the US attribution to the Russian military makes NotPetya an act of war. The cyber insurance industry holds its breath.` },
+        { id: 'e22', phase: 'fallout', dateLabel: 'October 19, 2020', t: 0.89, title: `DOJ indicts six GRU officers`, location: `Western District of Pennsylvania`, coords: [40.44,-79.99], severity: 3, kind: 'attribution', headline: `The US DOJ names six Sandworm officers by face and passport.`, body: `An indictment charges six GRU Unit 74455 officers by name for NotPetya, the Ukrainian power-grid attacks, Olympic Destroyer and interference in the 2017 French election. They are unlikely to ever stand trial — but their photos are now on FBI wanted posters.` },
+        { id: 'e23', phase: 'fallout', dateLabel: 'January 2022', t: 0.93, title: `Merck wins. $1.4 billion.`, location: `Union County, NJ`, coords: [40.66,-74.39], severity: 3, kind: 'insurance', headline: `A New Jersey court rules NotPetya was NOT an act of war under Merck's all-risk policy.`, body: `The court rules the "hostile/warlike action" exclusion cannot be stretched to cover state-sponsored cyberattacks on commercial infrastructure. Merck is entitled to the full $1.4 billion. The ruling is upheld on appeal in 2023. The precedent stands.`, damageUSD: `$1.4B awarded` },
+        { id: 'e24', phase: 'fallout', dateLabel: 'March 31, 2023', t: 0.97, title: `Lloyd's rewrites the market`, location: `Lloyd's of London`, coords: [51.51,-0.08], severity: 2, kind: 'insurance', headline: `Bulletin Y5381: all standalone cyber policies must now exclude state-backed cyberattacks.`, body: `Lloyd's requires every standalone cyber policy written by its syndicates from 31 March 2023 to carry explicit exclusions for losses from state-backed cyberattacks. The NotPetya precedent reshapes cyber insurance globally: tighter exclusions, higher premiums, reduced scope.`, damageUSD: `$10–15B cumulative` },
+      ],
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const RENDERER_SRC = $('tpl-renderer').textContent;
+    const DEFAULT_PHASE_COLORS = ['#d4a03c','#dc3c28','#b4afa5','#6c9b7d','#7d8bb0','#b07d9b'];
+
+    // Curated Google Fonts (any other family can be set via the JSON editor).
+    const FONTS = {
+      title: ['Fraunces', 'Playfair Display', 'Lora', 'Merriweather', 'Cormorant Garamond', 'Spectral', 'Inter'],
+      body:  ['Inter', 'Work Sans', 'Source Sans 3', 'Roboto', 'Open Sans', 'Lato', 'Nunito Sans'],
+      mono:  ['JetBrains Mono', 'IBM Plex Mono', 'Fira Code', 'Roboto Mono', 'Source Code Pro', 'Space Mono'],
+    };
+    function fillFontSelect(el, list, value) {
+      const opts = list.slice();
+      if (value && opts.indexOf(value) === -1) opts.unshift(value);
+      el.innerHTML = '';
+      opts.forEach(name => {
+        const o = document.createElement('option');
+        o.value = name; o.textContent = name;
+        if (name === value) o.selected = true;
+        el.appendChild(o);
+      });
+    }
+
+    let config = normalizeConfig(DEFAULT_CONFIG);
+
+    // ── Normalize: fill ids, derive event positions (t), derive phases ──
+    function normalizeConfig(raw) {
+      const cfg = JSON.parse(JSON.stringify(raw || {}));
+      cfg.meta = cfg.meta || {};
+      cfg.theme = Object.assign({
+        bg: '#0d0b08', fg: '#e6dcc8', ink: '#f6f1e4', accent: '#dc3c28', panel: '#0a0907',
+        line: 'rgba(230,220,200,0.12)', scale: 1,
+        fontTitle: 'Fraunces', fontBody: 'Inter', fontMono: 'JetBrains Mono',
+      }, cfg.theme || {});
+      cfg.layout = Object.assign({ showMap: true, showEventList: true, showSeverity: true, showArtifacts: true, showPlayback: true, mapSide: 'right' }, cfg.layout || {});
+      cfg.map = Object.assign({ mode: 'globe' }, cfg.map || {});
+      let events = Array.isArray(cfg.events) ? cfg.events.slice() : [];
+      events.forEach((e, i) => { if (!e.id) e.id = 'e' + String(i + 1).padStart(2, '0'); });
+
+      // Derive position t in [0,1]
+      const allT = events.every(e => typeof e.t === 'number' && isFinite(e.t));
+      if (!allT && events.length) {
+        const times = events.map(e => { const d = e.date ? Date.parse(e.date) : NaN; return isFinite(d) ? d : null; });
+        const valid = times.filter(v => v !== null);
+        if (valid.length === events.length && Math.max.apply(null, valid) > Math.min.apply(null, valid)) {
+          const min = Math.min.apply(null, valid), max = Math.max.apply(null, valid);
+          events.forEach((e, i) => { e.t = (times[i] - min) / (max - min); });
+        } else {
+          events.forEach((e, i) => { e.t = events.length === 1 ? 0 : i / (events.length - 1); });
+        }
+      }
+      events.sort((a, b) => (a.t || 0) - (b.t || 0));
+
+      // Derive phases if absent
+      let phases = Array.isArray(cfg.phases) ? cfg.phases.slice() : [];
+      if (!phases.length) {
+        const order = [];
+        events.forEach(e => { const p = e.phase || 'all'; e.phase = p; if (!order.includes(p)) order.push(p); });
+        phases = order.map((id, i) => {
+          const members = events.filter(e => e.phase === id);
+          const start = members.length ? Math.min.apply(null, members.map(e => e.t)) : 0;
+          return { id: id, label: id, start: start, color: DEFAULT_PHASE_COLORS[i % DEFAULT_PHASE_COLORS.length] };
+        });
+        phases.forEach((p, i) => { p.end = (i < phases.length - 1) ? phases[i + 1].start : 1.0; if (i === 0) p.start = 0; });
+      } else {
+        phases.forEach((p, i) => { if (!p.color) p.color = DEFAULT_PHASE_COLORS[i % DEFAULT_PHASE_COLORS.length]; });
+      }
+      cfg.events = events;
+      cfg.phases = phases;
+      return cfg;
+    }
+
+    // ── Build a fully standalone HTML timeline from a config ──
+    function buildHTML(cfg) {
+      const t = cfg.theme || {};
+      const title = (cfg.meta && cfg.meta.title) || 'Timeline';
+      const json = JSON.stringify(cfg).replace(/</g, '\\u003c').replace(/-->/g, '--\\u003e');
+      const fontsLink = fontsLinkFor(t);
+      const sc = (typeof t.scale === 'number' && t.scale > 0) ? t.scale : 1;
+      const rootRule = sc === 1
+        ? '  #root { position: relative; z-index: 1; width: 100%; height: 100%; }'
+        : '  #root { position: relative; z-index: 1; transform-origin: 0 0; transform: scale(' + sc + '); width: calc(100% / ' + sc + '); height: calc(100% / ' + sc + '); }';
+      return [
+'<!DOCTYPE html>',
+'<html lang="' + ((cfg.meta && cfg.meta.lang) || 'en') + '">',
+'<head>',
+'  <meta charset="UTF-8">',
+'  <title>' + escapeHtml(title) + '</title>',
+'  <meta name="viewport" content="width=device-width, initial-scale=1">',
+'  <link rel="preconnect" href="https://fonts.googleapis.com">',
+'  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>',
+fontsLink,
+'  <style>',
+'    * { box-sizing: border-box; }',
+'    html, body, #root { height: 100%; margin: 0; padding: 0; background: ' + (t.bg || '#0d0b08') + '; }',
+'    body { font-family: ' + cssFamily(t.fontBody || 'Inter', 'sans-serif') + '; color: ' + (t.fg || '#e6dcc8') + '; overflow: hidden; -webkit-font-smoothing: antialiased; }',
+'    body::before { content:""; position:fixed; inset:0; pointer-events:none; z-index:0; background-image: radial-gradient(circle at 20% 30%, ' + hexToRgba(t.accent || '#dc3c28', 0.035) + ' 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(212,160,60,0.025) 0%, transparent 50%); }',
+rootRule,
+'    ::-webkit-scrollbar { width: 10px; height: 10px; }',
+'    ::-webkit-scrollbar-track { background: transparent; }',
+'    ::-webkit-scrollbar-thumb { background: rgba(230,220,200,0.12); }',
+'    ::-webkit-scrollbar-thumb:hover { background: rgba(230,220,200,0.25); }',
+'    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.4;transform:scale(0.85);} }',
+'    button { font-family: inherit; }',
+'  </style>',
+'</head>',
+'<body>',
+'  <div id="root"></div>',
+'  <script>window.TIMELINE_CONFIG = ' + json + ';<\/script>',
+'  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"><\/script>',
+'  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"><\/script>',
+'  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"><\/script>',
+'  <script type="text/babel" data-presets="react">',
+RENDERER_SRC,
+'  <\/script>',
+'</body>',
+'</html>',
+      ].join('\n');
+    }
+
+    // Default trio is loaded via the original variable-font URL (true italics);
+    // any custom family is appended with a standard weight range.
+    const BASE_FONTS_URL = 'https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap';
+    const DEFAULT_FAMS = ['Fraunces', 'Inter', 'JetBrains Mono'];
+    function cssFamily(name, generic) { return '"' + String(name).replace(/"/g, '') + '", ' + generic; }
+    function fontsLinkFor(t) {
+      const want = [t.fontTitle || 'Fraunces', t.fontBody || 'Inter', t.fontMono || 'JetBrains Mono'];
+      const extra = [];
+      want.forEach(f => { if (f && DEFAULT_FAMS.indexOf(f) === -1 && extra.indexOf(f) === -1) extra.push(f); });
+      let link = '  <link href="' + BASE_FONTS_URL + '" rel="stylesheet">';
+      if (extra.length) {
+        const q = extra.map(f => 'family=' + encodeURIComponent(f).replace(/%20/g, '+') + ':ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,600').join('&');
+        link += '\n  <link href="https://fonts.googleapis.com/css2?' + q + '&display=swap" rel="stylesheet">';
+      }
+      return link;
+    }
+
+    // ── Offline export helpers ──
+    function arrayBufferToBase64(buf) {
+      const bytes = new Uint8Array(buf);
+      let binary = '';
+      for (let i = 0; i < bytes.length; i += 8192)
+        binary += String.fromCharCode.apply(null, bytes.subarray(i, Math.min(i + 8192, bytes.length)));
+      return btoa(binary);
+    }
+    function loadScript(src) {
+      return new Promise((resolve, reject) => {
+        if (document.querySelector('script[src="' + src + '"]')) { resolve(); return; }
+        const s = document.createElement('script');
+        s.src = src; s.onload = resolve; s.onerror = () => reject(new Error('Chargement échoué : ' + src));
+        document.head.appendChild(s);
+      });
+    }
+    async function fetchFontsInlined(t) {
+      const allLinks = fontsLinkFor(t);
+      const hrefs = [...allLinks.matchAll(/href="([^"]+)"/g)].map(m => m[1]);
+      let allCss = '';
+      for (const href of hrefs) {
+        let css; try { css = await fetch(href).then(r => r.text()); } catch { continue; }
+        const urlMatches = [...css.matchAll(/url\(([^)]+)\)/g)];
+        const reps = await Promise.all(urlMatches.map(async m => {
+          const rawUrl = m[1].replace(/['"]/g, '');
+          try { const ab = await fetch(rawUrl).then(r => r.arrayBuffer()); return [rawUrl, 'data:font/woff2;base64,' + arrayBufferToBase64(ab)]; }
+          catch { return null; }
+        }));
+        let inlined = css;
+        reps.forEach(r => { if (r) inlined = inlined.split(r[0]).join(r[1]); });
+        allCss += inlined + '\n';
+      }
+      return allCss ? '<style>\n' + allCss + '</style>' : '';
+    }
+    async function buildOfflineHTML(cfg, opts) {
+      if (!window.Babel) await loadScript('https://unpkg.com/@babel/standalone@7.29.0/babel.min.js');
+      const transpiledRenderer = window.Babel.transform(RENDERER_SRC, { presets: ['react'], filename: 'renderer.jsx' }).code;
+      const [reactText, reactDomText] = await Promise.all([
+        fetch('https://unpkg.com/react@18.3.1/umd/react.production.min.js').then(r => r.text()),
+        fetch('https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js').then(r => r.text()),
+      ]);
+      let mapCacheScript = '';
+      if (opts.includeMap) {
+        const [landJson, countriesJson] = await Promise.all([
+          fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/land-110m.json').then(r => r.text()),
+          fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(r => r.text()),
+        ]);
+        mapCacheScript = 'window.__LAND_CACHE__=' + landJson + ';window.__COUNTRIES_CACHE__=' + countriesJson + ';';
+      }
+      let fontsBlock = '<!-- offline: system fonts only -->';
+      if (opts.includeFonts) {
+        const inlined = await fetchFontsInlined(cfg.theme || {});
+        fontsBlock = inlined || '<!-- police : l\'intégration a échoué, polices système utilisées -->';
+      }
+      const t = cfg.theme || {};
+      const title = (cfg.meta && cfg.meta.title) || 'Timeline';
+      const json = JSON.stringify(cfg).replace(/</g, '\\u003c').replace(/-->/g, '--\\u003e');
+      const sc = (typeof t.scale === 'number' && t.scale > 0) ? t.scale : 1;
+      const rootRule = sc === 1
+        ? '  #root { position: relative; z-index: 1; width: 100%; height: 100%; }'
+        : '  #root { position: relative; z-index: 1; transform-origin: 0 0; transform: scale(' + sc + '); width: calc(100% / ' + sc + '); height: calc(100% / ' + sc + '); }';
+      return [
+        '<!DOCTYPE html>',
+        '<html lang="' + ((cfg.meta && cfg.meta.lang) || 'en') + '">',
+        '<head>',
+        '  <meta charset="UTF-8">',
+        '  <title>' + escapeHtml(title) + '</title>',
+        '  <meta name="viewport" content="width=device-width, initial-scale=1">',
+        fontsBlock,
+        '  <style>',
+        '    * { box-sizing: border-box; }',
+        '    html, body, #root { height: 100%; margin: 0; padding: 0; background: ' + (t.bg || '#0d0b08') + '; }',
+        '    body { font-family: ' + cssFamily(t.fontBody || 'Inter', 'sans-serif') + '; color: ' + (t.fg || '#e6dcc8') + '; overflow: hidden; -webkit-font-smoothing: antialiased; }',
+        '    body::before { content:""; position:fixed; inset:0; pointer-events:none; z-index:0; background-image: radial-gradient(circle at 20% 30%, ' + hexToRgba(t.accent || '#dc3c28', 0.035) + ' 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(212,160,60,0.025) 0%, transparent 50%); }',
+        rootRule,
+        '    ::-webkit-scrollbar { width: 10px; height: 10px; }',
+        '    ::-webkit-scrollbar-track { background: transparent; }',
+        '    ::-webkit-scrollbar-thumb { background: rgba(230,220,200,0.12); }',
+        '    ::-webkit-scrollbar-thumb:hover { background: rgba(230,220,200,0.25); }',
+        '    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.4;transform:scale(0.85);} }',
+        '    button { font-family: inherit; }',
+        '  </style>',
+        '</head>',
+        '<body>',
+        '  <div id="root"></div>',
+        '  <script>' + (mapCacheScript || '') + 'window.TIMELINE_CONFIG = ' + json + ';<\/script>',
+        '  <script>' + reactText + '<\/script>',
+        '  <script>' + reactDomText + '<\/script>',
+        '  <script>',
+        transpiledRenderer,
+        '  <\/script>',
+        '</body>',
+        '</html>',
+      ].join('\n');
+    }
+
+    function hexToRgba(hex, a) {
+      if (!hex || hex[0] !== '#') return hex;
+      let h = hex.slice(1);
+      if (h.length === 3) h = h.split('').map(c => c + c).join('');
+      const n = parseInt(h, 16);
+      return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+    }
+    function escapeHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+    function download(name, content, type) {
+      const blob = new Blob([content], { type: type || 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    // ── Render preview + sync all controls from current config ──
+    function renderPreview() { $('preview').srcdoc = buildHTML(config); }
+
+    function syncControls() {
+      const m = config.meta, th = config.theme, ly = config.layout;
+      $('m-title').value = m.title || '';
+      $('m-sub').value = m.subtitle || '';
+      $('m-badge').value = m.badge || '';
+      $('c-bg').value = toHex(th.bg, '#0d0b08');
+      $('c-fg').value = toHex(th.fg, '#e6dcc8');
+      $('c-ink').value = toHex(th.ink, '#f6f1e4');
+      $('c-accent').value = toHex(th.accent, '#dc3c28');
+      $('c-panel').value = toHex(th.panel, '#0a0907');
+      $('c-line').value = toHex(th.line, '#2a2620');
+      fillFontSelect($('f-title'), FONTS.title, th.fontTitle || 'Fraunces');
+      fillFontSelect($('f-body'), FONTS.body, th.fontBody || 'Inter');
+      fillFontSelect($('f-mono'), FONTS.mono, th.fontMono || 'JetBrains Mono');
+      const sc = (typeof th.scale === 'number' && th.scale > 0) ? th.scale : 1;
+      $('s-scale').value = sc; $('s-scale-val').textContent = sc.toFixed(2);
+      $('l-mapside').value = ly.mapSide === 'left' ? 'left' : 'right';
+      const mp = config.map || {};
+      $('l-maptype').value = ly.showMap === false ? 'none' : (mp.mode === 'region' ? 'region' : 'globe');
+      $('l-bounds').value = Array.isArray(mp.bounds) && mp.bounds.length === 4 ? mp.bounds.join(', ') : '';
+      $('l-country').value = (mp.country != null) ? String(mp.country) : '';
+      const isReg = $('l-maptype').value === 'region';
+      $('row-bounds').style.display = isReg ? 'flex' : 'none';
+      $('row-country').style.display = isReg ? 'flex' : 'none';
+      $('t-map').checked = ly.showMap !== false;
+      $('t-list').checked = ly.showEventList !== false;
+      $('t-sev').checked = ly.showSeverity !== false;
+      $('t-art').checked = ly.showArtifacts !== false;
+      $('t-play').checked = ly.showPlayback !== false;
+      // Per-phase color pickers
+      const box = $('phase-colors'); box.innerHTML = '';
+      (config.phases || []).forEach((p, i) => {
+        const row = document.createElement('div'); row.className = 'color-row';
+        const lab = document.createElement('span'); lab.className = 'swatch-label'; lab.textContent = (p.label || p.id).slice(0, 9);
+        const inp = document.createElement('input'); inp.type = 'color'; inp.value = toHex(p.color, DEFAULT_PHASE_COLORS[i % DEFAULT_PHASE_COLORS.length]);
+        inp.addEventListener('input', () => { config.phases[i].color = inp.value; pushJson(); renderPreview(); });
+        const nm = document.createElement('label'); nm.textContent = p.label || p.id;
+        row.appendChild(lab); row.appendChild(inp); row.appendChild(nm); box.appendChild(row);
+      });
+      pushJson();
+    }
+    function toHex(v, fallback) { return (typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v)) ? v : (typeof v === 'string' && /^#[0-9a-fA-F]{3}$/.test(v) ? '#' + v.slice(1).split('').map(c => c + c).join('') : fallback); }
+    function pushJson() { $('json').value = JSON.stringify(config, null, 2); $('err').textContent = ''; }
+
+    function applyConfig(raw) {
+      config = normalizeConfig(raw);
+      syncControls();
+      renderPreview();
+    }
+
+    // ── Wire up controls ──
+    $('m-title').addEventListener('input', e => { config.meta.title = e.target.value; pushJson(); renderPreview(); });
+    $('m-sub').addEventListener('input', e => { config.meta.subtitle = e.target.value; pushJson(); renderPreview(); });
+    $('m-badge').addEventListener('input', e => { config.meta.badge = e.target.value; pushJson(); renderPreview(); });
+    $('c-bg').addEventListener('input', e => { config.theme.bg = e.target.value; pushJson(); renderPreview(); });
+    $('c-fg').addEventListener('input', e => { config.theme.fg = e.target.value; pushJson(); renderPreview(); });
+    $('c-ink').addEventListener('input', e => { config.theme.ink = e.target.value; pushJson(); renderPreview(); });
+    $('c-accent').addEventListener('input', e => { config.theme.accent = e.target.value; pushJson(); renderPreview(); });
+    $('c-panel').addEventListener('input', e => { config.theme.panel = e.target.value; pushJson(); renderPreview(); });
+    $('c-line').addEventListener('input', e => { config.theme.line = e.target.value; pushJson(); renderPreview(); });
+    $('s-scale').addEventListener('input', e => { const v = parseFloat(e.target.value); config.theme.scale = v; $('s-scale-val').textContent = v.toFixed(2); pushJson(); renderPreview(); });
+    $('l-mapside').addEventListener('change', e => { config.layout.mapSide = e.target.value; pushJson(); renderPreview(); });
+    $('l-maptype').addEventListener('change', e => {
+      const v = e.target.value;
+      config.map = config.map || {};
+      if (v === 'none') { config.layout.showMap = false; }
+      else { config.layout.showMap = true; config.map.mode = v; }
+      $('t-map').checked = config.layout.showMap;
+      const isReg2 = (v === 'region');
+      $('row-bounds').style.display = isReg2 ? 'flex' : 'none';
+      $('row-country').style.display = isReg2 ? 'flex' : 'none';
+      pushJson(); renderPreview();
+    });
+    $('l-bounds').addEventListener('input', e => {
+      config.map = config.map || {};
+      const nums = e.target.value.split(/[,\s]+/).map(parseFloat).filter(n => isFinite(n));
+      if (nums.length === 4) config.map.bounds = nums; else delete config.map.bounds;
+      pushJson(); renderPreview();
+    });
+    // keep the map-type selector in sync when the master toggle is used
+    $('t-map').addEventListener('change', e => {
+      $('l-maptype').value = e.target.checked ? ((config.map && config.map.mode === 'region') ? 'region' : 'globe') : 'none';
+      const isReg3 = $('l-maptype').value === 'region';
+      $('row-bounds').style.display = isReg3 ? 'flex' : 'none';
+      $('row-country').style.display = isReg3 ? 'flex' : 'none';
+    });
+    $('f-title').addEventListener('change', e => { config.theme.fontTitle = e.target.value; pushJson(); renderPreview(); });
+    $('f-body').addEventListener('change', e => { config.theme.fontBody = e.target.value; pushJson(); renderPreview(); });
+    $('f-mono').addEventListener('change', e => { config.theme.fontMono = e.target.value; pushJson(); renderPreview(); });
+    [['t-map','showMap'],['t-list','showEventList'],['t-sev','showSeverity'],['t-art','showArtifacts'],['t-play','showPlayback']].forEach(([id, key]) => {
+      $(id).addEventListener('change', e => { config.layout[key] = e.target.checked; pushJson(); renderPreview(); });
+    });
+
+    $('x-offline').addEventListener('change', e => {
+      $('offline-opts').style.display = e.target.checked ? 'block' : 'none';
+    });
+    $('l-country').addEventListener('input', e => {
+      config.map = config.map || {};
+      const v = e.target.value.trim();
+      if (v) config.map.country = v; else delete config.map.country;
+      pushJson(); renderPreview();
+    });
+
+    $('btn-example').addEventListener('click', () => applyConfig(DEFAULT_CONFIG));
+    $('btn-load').addEventListener('click', () => $('file').click());
+    $('file').addEventListener('change', e => {
+      const f = e.target.files[0]; if (!f) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try { applyConfig(JSON.parse(reader.result)); }
+        catch (err) { $('err').textContent = 'Fichier invalide : ' + err.message; }
+      };
+      reader.readAsText(f); e.target.value = '';
+    });
+    $('btn-apply').addEventListener('click', () => {
+      try { applyConfig(JSON.parse($('json').value)); }
+      catch (err) { $('err').textContent = 'JSON invalide : ' + err.message; }
+    });
+    $('btn-json').addEventListener('click', () => {
+      const name = ((config.meta.title || 'timeline').toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'timeline') + '.config.json';
+      download(name, JSON.stringify(config, null, 2), 'application/json');
+    });
+    $('btn-html').addEventListener('click', async () => {
+      const isOffline = $('x-offline').checked;
+      if (!isOffline) {
+        const name = ((config.meta.title || 'timeline').toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'timeline') + '.timeline.html';
+        download(name, buildHTML(config), 'text/html');
+        return;
+      }
+      const btn = $('btn-html'), txtEl = $('btn-html-txt');
+      btn.disabled = true;
+      if (txtEl) txtEl.textContent = 'Génération…';
+      $('err').textContent = '';
+      try {
+        const opts = { includeMap: $('x-mapdata').checked, includeFonts: $('x-fonts').checked };
+        const html = await buildOfflineHTML(config, opts);
+        const name = ((config.meta.title || 'timeline').toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'timeline') + '.offline.html';
+        download(name, html, 'text/html');
+      } catch (e) {
+        $('err').textContent = 'Export hors-ligne : ' + e.message;
+      } finally {
+        btn.disabled = false;
+        if (txtEl) txtEl.textContent = 'Télécharger la timeline';
+      }
+    });
+
+    // ── Boot ──
+    syncControls();
+    renderPreview();
+  })();
+  </script>
+</body>
+</html>
