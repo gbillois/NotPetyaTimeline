@@ -1,0 +1,271 @@
+/* ============================================================================
+   WAVESTONE DESIGN SYSTEM — Design Tokens (CSS Custom Properties)
+   ----------------------------------------------------------------------------
+   Source of truth distilled from the Wavestone Universal Registration
+   Document 2024/25. Drop this file into any project and reference the
+   variables (e.g. `color: var(--ws-color-primary)`).
+
+   Layers:
+     1. Primitives  — raw scales (never use directly in app code if avoidable)
+     2. Semantic    — role-based aliases (use THESE in components)
+     3. Components   — opt-in component-level tokens
+     4. Dark surface — overrides for the signature indigo brand surface
+   ========================================================================== */
+
+/* Optional: brand-adjacent web fonts. Replace with the licensed Wavestone
+   typeface when available. */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  /* ==========================================================================
+     1. PRIMITIVES
+     ========================================================================== */
+
+  /* --- Indigo (brand primary) ------------------------------------------- */
+  --ws-indigo-50:  #F1EEFB;
+  --ws-indigo-100: #D1CAF2;
+  --ws-indigo-200: #BDAFEB;
+  --ws-indigo-300: #A18FE3;
+  --ws-indigo-400: #866CDB;
+  --ws-indigo-500: #5A2BE0;
+  --ws-indigo-600: #451DC7; /* ◆ Wavestone primary */
+  --ws-indigo-700: #36169B;
+  --ws-indigo-800: #2D1380;
+  --ws-indigo-900: #1E0D57;
+  --ws-indigo-950: #150939;
+
+  /* --- Green (brand accent) --------------------------------------------- */
+  --ws-green-50:  #E1FDED;
+  --ws-green-100: #C8FBDC;
+  --ws-green-200: #A6FACA;
+  --ws-green-300: #5CF59E;
+  --ws-green-400: #04F06A; /* ◆ Wavestone accent (neon — use on dark/large) */
+  --ws-green-500: #06D964;
+  --ws-green-600: #06B854;
+  --ws-green-700: #088A42; /* accessible green text on white */
+  --ws-green-800: #066632;
+
+  /* --- Teal (secondary accent) ------------------------------------------ */
+  --ws-teal-300:  #6EC3C9;
+  --ws-teal-400:  #3E9BA3;
+  --ws-teal-500:  #228D95;
+  --ws-teal-600:  #1E7A82;
+  --ws-teal-700:  #18636A;
+
+  /* --- Ink / neutrals (slightly indigo-tinted greys) -------------------- */
+  --ws-white:    #FFFFFF;
+  --ws-ink-50:   #F5F4F9;
+  --ws-ink-100:  #E6E4EE;
+  --ws-ink-200:  #CFCCDC;
+  --ws-ink-300:  #A8A4B8;
+  --ws-ink-400:  #817C95;
+  --ws-ink-500:  #6B6580;
+  --ws-ink-600:  #514C63;
+  --ws-ink-700:  #3A3550;
+  --ws-ink-800:  #242036;
+  --ws-ink-900:  #16121F; /* near-black, faint indigo cast */
+
+  /* --- Status (harmonised with brand) ----------------------------------- */
+  --ws-success: #088A42;
+  --ws-warning: #C8861A;
+  --ws-danger:  #D8412F;
+  --ws-info:    #228D95;
+
+  /* ==========================================================================
+     2. SEMANTIC (role-based — prefer these in components)
+     ========================================================================== */
+
+  /* Surfaces & backgrounds */
+  --ws-color-bg:            var(--ws-white);
+  --ws-color-bg-subtle:     var(--ws-ink-50);
+  --ws-color-bg-muted:      var(--ws-ink-100);
+  --ws-color-surface:       var(--ws-white);
+  --ws-color-surface-raised:var(--ws-white);
+  --ws-color-bg-inverse:    var(--ws-indigo-800);
+
+  /* Text */
+  --ws-color-text:          var(--ws-ink-900);
+  --ws-color-text-muted:    var(--ws-ink-500);
+  --ws-color-text-subtle:   var(--ws-ink-400);
+  --ws-color-text-inverse:  var(--ws-white);
+  --ws-color-text-on-primary: var(--ws-white);
+  --ws-color-heading:       var(--ws-indigo-600);
+
+  /* Primary (indigo) */
+  --ws-color-primary:         var(--ws-indigo-600);
+  --ws-color-primary-hover:   var(--ws-indigo-700);
+  --ws-color-primary-active:  var(--ws-indigo-800);
+  --ws-color-primary-subtle:  var(--ws-indigo-50);
+  --ws-color-primary-contrast:var(--ws-white);
+
+  /* Accent (green) */
+  --ws-color-accent:          var(--ws-green-400);
+  --ws-color-accent-strong:   var(--ws-green-700); /* for text on light */
+  --ws-color-accent-subtle:   var(--ws-green-50);
+  --ws-color-accent-contrast: var(--ws-indigo-900);
+
+  /* Secondary (teal) */
+  --ws-color-secondary:        var(--ws-teal-500);
+  --ws-color-secondary-subtle: #E2F1F2;
+
+  /* Lines, borders, focus */
+  --ws-color-border:        var(--ws-ink-100);
+  --ws-color-border-strong: var(--ws-ink-200);
+  --ws-color-divider:       var(--ws-ink-100);
+  --ws-color-focus-ring:    var(--ws-indigo-500);
+
+  /* Signature brand gradient (cover) + green "wave" stroke */
+  --ws-gradient-brand:  radial-gradient(120% 120% at 25% 15%, #5226E0 0%, #451DC7 38%, #2D1380 100%);
+  --ws-gradient-brand-flat: linear-gradient(135deg, #451DC7 0%, #2D1380 100%);
+  --ws-gradient-accent: linear-gradient(90deg, #04F06A 0%, #5CF59E 100%);
+
+  /* ==========================================================================
+     3. TYPOGRAPHY
+     ========================================================================== */
+  --ws-font-display: 'Poppins', 'Montserrat', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --ws-font-body:    'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --ws-font-mono:    'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* Font sizes (1rem = 16px) */
+  --ws-text-xs:   0.75rem;   /* 12 */
+  --ws-text-sm:   0.875rem;  /* 14 */
+  --ws-text-base: 1rem;      /* 16 */
+  --ws-text-lg:   1.125rem;  /* 18 */
+  --ws-text-xl:   1.25rem;   /* 20 */
+  --ws-text-2xl:  1.5rem;    /* 24 */
+  --ws-text-3xl:  1.875rem;  /* 30 */
+  --ws-text-4xl:  2.25rem;   /* 36 */
+  --ws-text-5xl:  3rem;      /* 48 */
+  --ws-text-6xl:  3.75rem;   /* 60 */
+  --ws-text-7xl:  4.5rem;    /* 72 — display / stat numbers */
+
+  /* Weights */
+  --ws-weight-regular:  400;
+  --ws-weight-medium:   500;
+  --ws-weight-semibold: 600;
+  --ws-weight-bold:     700;
+  --ws-weight-extrabold:800;
+
+  /* Line heights */
+  --ws-leading-none:    1;
+  --ws-leading-tight:   1.15;
+  --ws-leading-snug:    1.3;
+  --ws-leading-normal:  1.5;
+  --ws-leading-relaxed: 1.65;
+
+  /* Letter spacing */
+  --ws-tracking-tighter: -0.03em;
+  --ws-tracking-tight:   -0.015em;
+  --ws-tracking-normal:  0;
+  --ws-tracking-wide:    0.04em;
+  --ws-tracking-eyebrow: 0.14em; /* uppercase eyebrow labels */
+
+  /* ==========================================================================
+     4. SPACING (4px base grid)
+     ========================================================================== */
+  --ws-space-0:  0;
+  --ws-space-1:  0.25rem; /* 4  */
+  --ws-space-2:  0.5rem;  /* 8  */
+  --ws-space-3:  0.75rem; /* 12 */
+  --ws-space-4:  1rem;    /* 16 */
+  --ws-space-5:  1.25rem; /* 20 */
+  --ws-space-6:  1.5rem;  /* 24 */
+  --ws-space-8:  2rem;    /* 32 */
+  --ws-space-10: 2.5rem;  /* 40 */
+  --ws-space-12: 3rem;    /* 48 */
+  --ws-space-16: 4rem;    /* 64 */
+  --ws-space-20: 5rem;    /* 80 */
+  --ws-space-24: 6rem;    /* 96 */
+  --ws-space-32: 8rem;    /* 128 */
+
+  /* ==========================================================================
+     5. RADII
+     ========================================================================== */
+  --ws-radius-none: 0;
+  --ws-radius-sm:   4px;
+  --ws-radius-md:   8px;
+  --ws-radius-lg:   12px;
+  --ws-radius-xl:   16px;
+  --ws-radius-2xl:  24px;
+  --ws-radius-3xl:  32px;
+  --ws-radius-pill: 999px;
+  --ws-radius-full: 50%;
+
+  /* ==========================================================================
+     6. BORDERS
+     ========================================================================== */
+  --ws-border-width:       1px;
+  --ws-border-width-thick: 2px;
+  --ws-border-width-heavy: 4px;
+
+  /* ==========================================================================
+     7. SHADOWS / ELEVATION
+     ========================================================================== */
+  --ws-shadow-xs: 0 1px 2px rgba(22, 18, 31, 0.06);
+  --ws-shadow-sm: 0 1px 3px rgba(22, 18, 31, 0.08), 0 1px 2px rgba(22, 18, 31, 0.06);
+  --ws-shadow-md: 0 4px 12px rgba(22, 18, 31, 0.10);
+  --ws-shadow-lg: 0 12px 28px rgba(22, 18, 31, 0.12);
+  --ws-shadow-xl: 0 24px 48px rgba(22, 18, 31, 0.16);
+  /* indigo-tinted brand glow for emphasis surfaces/buttons */
+  --ws-shadow-brand: 0 14px 30px rgba(69, 29, 199, 0.30);
+  --ws-shadow-focus: 0 0 0 3px rgba(90, 43, 224, 0.35);
+
+  /* ==========================================================================
+     8. MOTION
+     ========================================================================== */
+  --ws-duration-fast:   120ms;
+  --ws-duration-base:   200ms;
+  --ws-duration-slow:   320ms;
+  --ws-ease-standard:   cubic-bezier(0.2, 0, 0, 1);
+  --ws-ease-in:         cubic-bezier(0.4, 0, 1, 1);
+  --ws-ease-out:        cubic-bezier(0, 0, 0.2, 1);
+  --ws-ease-emphasized: cubic-bezier(0.2, 0, 0, 1.2);
+
+  /* ==========================================================================
+     9. LAYOUT
+     ========================================================================== */
+  --ws-container-sm: 640px;
+  --ws-container-md: 768px;
+  --ws-container-lg: 1024px;
+  --ws-container-xl: 1280px;
+  --ws-container-2xl: 1440px;
+
+  --ws-z-base:     0;
+  --ws-z-dropdown: 1000;
+  --ws-z-sticky:   1100;
+  --ws-z-overlay:  1200;
+  --ws-z-modal:    1300;
+  --ws-z-toast:    1400;
+}
+
+/* ============================================================================
+   DARK / INVERSE BRAND SURFACE
+   Apply `.ws-on-brand` (or data-theme="brand") to any block that sits on the
+   signature indigo background — text/border roles flip automatically.
+   ========================================================================== */
+.ws-on-brand,
+[data-ws-surface="brand"] {
+  --ws-color-bg:          var(--ws-indigo-800);
+  --ws-color-bg-subtle:   var(--ws-indigo-700);
+  --ws-color-surface:     rgba(255, 255, 255, 0.06);
+  --ws-color-text:        var(--ws-white);
+  --ws-color-text-muted:  rgba(255, 255, 255, 0.72);
+  --ws-color-text-subtle: rgba(255, 255, 255, 0.55);
+  --ws-color-heading:     var(--ws-white);
+  --ws-color-border:      rgba(255, 255, 255, 0.16);
+  --ws-color-border-strong: rgba(255, 255, 255, 0.32);
+  --ws-color-primary:        var(--ws-green-400); /* accent leads on dark */
+  --ws-color-primary-contrast: var(--ws-indigo-900);
+  --ws-color-accent-strong:  var(--ws-green-300);
+  color: var(--ws-color-text);
+  background: var(--ws-gradient-brand);
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --ws-duration-fast: 0ms;
+    --ws-duration-base: 0ms;
+    --ws-duration-slow: 0ms;
+  }
+}

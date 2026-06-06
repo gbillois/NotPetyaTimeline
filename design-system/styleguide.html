@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wavestone Design System — Style Guide</title>
+<link rel="stylesheet" href="wavestone-tokens.css">
+<link rel="stylesheet" href="wavestone-components.css">
+<style>
+  body { margin: 0; font-family: var(--ws-font-body); color: var(--ws-color-text); background: var(--ws-color-bg); }
+  .page { max-width: 1100px; margin-inline: auto; padding: var(--ws-space-12) var(--ws-space-6) var(--ws-space-24); }
+  section { padding-block: var(--ws-space-12); border-top: 1px solid var(--ws-color-border); }
+  section:first-of-type { border-top: 0; }
+  .section-head { display: flex; align-items: baseline; gap: var(--ws-space-4); margin-bottom: var(--ws-space-8); }
+  .section-head .n { font-family: var(--ws-font-display); font-weight: 800; color: var(--ws-color-accent-strong); font-size: var(--ws-text-sm); }
+  .grid { display: grid; gap: var(--ws-space-4); }
+  .swatch { border-radius: var(--ws-radius-lg); overflow: hidden; border: 1px solid var(--ws-color-border); box-shadow: var(--ws-shadow-xs); }
+  .swatch .chip { height: 72px; }
+  .swatch .meta { padding: var(--ws-space-2) var(--ws-space-3); font-size: var(--ws-text-xs); }
+  .swatch .meta b { display:block; font-weight:600; }
+  .swatch .meta code { color: var(--ws-color-text-muted); font-family: var(--ws-font-mono); }
+  .row { display:flex; flex-wrap:wrap; gap: var(--ws-space-3); align-items:center; }
+  .demo-box { background: var(--ws-color-accent); }
+  .tok-table { width:100%; border-collapse: collapse; font-size: var(--ws-text-sm); }
+  .tok-table td { padding: var(--ws-space-2) var(--ws-space-3); border-bottom: 1px solid var(--ws-color-border); }
+  .tok-table code { font-family: var(--ws-font-mono); color: var(--ws-color-primary); }
+  .hero { border-radius: var(--ws-radius-2xl); padding: var(--ws-space-16) var(--ws-space-12); position: relative; overflow: hidden; }
+  .hero svg { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+  .scale-row { display:flex; align-items:baseline; gap: var(--ws-space-4); border-bottom:1px solid var(--ws-color-border); padding-block: var(--ws-space-2); }
+  .scale-row .tag { font-family: var(--ws-font-mono); font-size: var(--ws-text-xs); color: var(--ws-color-text-muted); width: 96px; flex:none; }
+  .space-demo { background: var(--ws-color-primary-subtle); border-left: 3px solid var(--ws-color-primary); }
+  .radius-demo { width:80px;height:80px;background:var(--ws-color-primary-subtle);border:1px solid var(--ws-color-border-strong);display:flex;align-items:center;justify-content:center;font-size:var(--ws-text-xs);color:var(--ws-color-primary);font-family:var(--ws-font-mono); }
+  .shadow-demo { width:120px;height:80px;background:var(--ws-color-surface);border-radius:var(--ws-radius-lg);display:flex;align-items:center;justify-content:center;font-size:var(--ws-text-xs);color:var(--ws-color-text-muted);font-family:var(--ws-font-mono); }
+</style>
+</head>
+<body class="ws-root">
+<div class="page">
+
+  <!-- ===== HERO ===== -->
+  <div class="hero ws-on-brand" style="margin-bottom: var(--ws-space-12);">
+    <svg viewBox="0 0 1100 360" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M0,250 C300,150 700,360 1100,180" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="1.5"/>
+      <path d="M0,300 C350,210 720,400 1100,250" fill="none" stroke="#04F06A" stroke-width="1.5"/>
+    </svg>
+    <div style="position:relative;">
+      <div style="font-family:var(--ws-font-display);font-weight:800;font-size:var(--ws-text-3xl);letter-spacing:0.18em;color:#fff;">WAVESTONE</div>
+      <h1 style="font-family:var(--ws-font-display);font-weight:800;font-size:var(--ws-text-5xl);line-height:1.05;margin:var(--ws-space-6) 0 var(--ws-space-2);color:#fff;">Design System</h1>
+      <p style="font-size:var(--ws-text-xl);color:rgba(255,255,255,0.8);margin:0;">Tokens &amp; components <span style="color:var(--ws-green-300);font-weight:700;">2024 / 25</span></p>
+    </div>
+  </div>
+
+  <p class="ws-body" style="max-width:60ch;">A portable, framework-agnostic design system distilled from the Wavestone
+  Universal Registration Document. Import <code>wavestone-tokens.css</code> for the variables and,
+  optionally, <code>wavestone-components.css</code> for the ready-made component classes shown below.</p>
+
+  <!-- ===== COLORS ===== -->
+  <section>
+    <div class="section-head"><span class="n">01</span><h2 class="ws-h2">Color</h2></div>
+
+    <h3 class="ws-h3" style="margin-bottom:var(--ws-space-4)">Indigo — primary</h3>
+    <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(120px,1fr));" id="indigo"></div>
+
+    <h3 class="ws-h3" style="margin:var(--ws-space-8) 0 var(--ws-space-4)">Green — accent</h3>
+    <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(120px,1fr));" id="green"></div>
+
+    <h3 class="ws-h3" style="margin:var(--ws-space-8) 0 var(--ws-space-4)">Teal — secondary</h3>
+    <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(120px,1fr));" id="teal"></div>
+
+    <h3 class="ws-h3" style="margin:var(--ws-space-8) 0 var(--ws-space-4)">Ink — neutrals</h3>
+    <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(120px,1fr));" id="ink"></div>
+
+    <h3 class="ws-h3" style="margin:var(--ws-space-8) 0 var(--ws-space-4)">Gradients</h3>
+    <div class="row">
+      <div style="height:120px;flex:1;min-width:240px;border-radius:var(--ws-radius-xl);background:var(--ws-gradient-brand);"></div>
+      <div style="height:120px;flex:1;min-width:240px;border-radius:var(--ws-radius-xl);background:var(--ws-gradient-accent);"></div>
+    </div>
+  </section>
+
+  <!-- ===== TYPOGRAPHY ===== -->
+  <section>
+    <div class="section-head"><span class="n">02</span><h2 class="ws-h2">Typography</h2></div>
+    <p class="ws-small">Display: <b>Poppins</b> · Body: <b>Inter</b> · Mono: <b>IBM Plex Mono</b>. Swap in the licensed Wavestone face for production.</p>
+    <div style="margin-top:var(--ws-space-6)">
+      <div class="scale-row"><span class="tag">7xl / display</span><span class="ws-display">Aa</span></div>
+      <div class="scale-row"><span class="tag">4xl / h1</span><span class="ws-h1">The quiet wave</span></div>
+      <div class="scale-row"><span class="tag">3xl / h2</span><span class="ws-h2">The quiet wave</span></div>
+      <div class="scale-row"><span class="tag">xl / h3</span><span class="ws-h3">The quiet wave</span></div>
+      <div class="scale-row"><span class="tag">base / body</span><span class="ws-body">The quiet wave that moves everything.</span></div>
+      <div class="scale-row"><span class="tag">sm / small</span><span class="ws-small">The quiet wave that moves everything.</span></div>
+    </div>
+    <div style="margin-top:var(--ws-space-8)">
+      <span class="ws-eyebrow">Eyebrow label</span>
+    </div>
+  </section>
+
+  <!-- ===== STATS ===== -->
+  <section>
+    <div class="section-head"><span class="n">03</span><h2 class="ws-h2">Key figures</h2></div>
+    <div class="hero ws-on-brand" style="padding:var(--ws-space-12)">
+      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--ws-space-10);position:relative">
+        <div><span class="ws-stat">6,076</span><span class="ws-stat__label">employees worldwide</span></div>
+        <div><span class="ws-stat">5</span><span class="ws-stat__label">key geographies</span></div>
+        <div><span class="ws-stat">€943.7m</span><span class="ws-stat__label">revenue</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== BUTTONS ===== -->
+  <section>
+    <div class="section-head"><span class="n">04</span><h2 class="ws-h2">Buttons</h2></div>
+    <div class="row" style="margin-bottom:var(--ws-space-4)">
+      <button class="ws-btn ws-btn--primary">Primary</button>
+      <button class="ws-btn ws-btn--accent">Accent</button>
+      <button class="ws-btn ws-btn--outline">Outline</button>
+      <button class="ws-btn ws-btn--ghost">Ghost</button>
+      <button class="ws-btn ws-btn--primary" disabled>Disabled</button>
+    </div>
+    <div class="row">
+      <button class="ws-btn ws-btn--primary ws-btn--sm">Small</button>
+      <button class="ws-btn ws-btn--primary">Default</button>
+      <button class="ws-btn ws-btn--primary ws-btn--lg">Large</button>
+    </div>
+  </section>
+
+  <!-- ===== BADGES ===== -->
+  <section>
+    <div class="section-head"><span class="n">05</span><h2 class="ws-h2">Badges &amp; tags</h2></div>
+    <div class="row">
+      <span class="ws-badge ws-badge--primary">Chapter 1</span>
+      <span class="ws-badge ws-badge--accent">New</span>
+      <span class="ws-badge ws-badge--teal">CSRD</span>
+      <span class="ws-badge ws-badge--subtle">Report</span>
+      <span class="ws-badge ws-badge--outline">Draft</span>
+    </div>
+  </section>
+
+  <!-- ===== CARDS ===== -->
+  <section>
+    <div class="section-head"><span class="n">06</span><h2 class="ws-h2">Cards</h2></div>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr));">
+      <article class="ws-card ws-card--interactive">
+        <span class="ws-eyebrow">Insight</span>
+        <h3 class="ws-card__title" style="margin-top:var(--ws-space-4)">A complex world</h3>
+        <p class="ws-card__body">An independent consulting firm with European roots, listed since 2000.</p>
+      </article>
+      <article class="ws-card ws-card--interactive">
+        <span class="ws-eyebrow">Governance</span>
+        <h3 class="ws-card__title" style="margin-top:var(--ws-space-4)">Board of Directors</h3>
+        <p class="ws-card__body">92% attendance across seven meetings during the 2024/25 fiscal year.</p>
+      </article>
+      <article class="ws-card ws-card--interactive">
+        <span class="ws-eyebrow">Impact</span>
+        <h3 class="ws-card__title" style="margin-top:var(--ws-space-4)">Sustainability</h3>
+        <p class="ws-card__body">First implementation of the CSRD directive with medium-term targets.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- ===== QUOTE ===== -->
+  <section>
+    <div class="section-head"><span class="n">07</span><h2 class="ws-h2">Pull quote</h2></div>
+    <blockquote class="ws-quote">
+      "Given the quality of internal candidates and the specific characteristics of Wavestone, an internal succession scenario was favored."
+      <cite class="ws-quote__cite">— Florence Didier-Noaro</cite>
+    </blockquote>
+  </section>
+
+  <!-- ===== FORMS ===== -->
+  <section>
+    <div class="section-head"><span class="n">08</span><h2 class="ws-h2">Forms</h2></div>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr));max-width:720px">
+      <div>
+        <label class="ws-label" for="f1">Full name</label>
+        <input class="ws-input" id="f1" placeholder="Jane Doe">
+      </div>
+      <div>
+        <label class="ws-label" for="f2">Region</label>
+        <select class="ws-select" id="f2"><option>France</option><option>DACH</option><option>UK &amp; US</option></select>
+      </div>
+    </div>
+    <div style="max-width:720px;margin-top:var(--ws-space-4)">
+      <label class="ws-label" for="f3">Message</label>
+      <textarea class="ws-textarea" id="f3" rows="3" placeholder="Tell us more…"></textarea>
+    </div>
+  </section>
+
+  <!-- ===== SPACING / RADIUS / SHADOW ===== -->
+  <section>
+    <div class="section-head"><span class="n">09</span><h2 class="ws-h2">Spacing</h2></div>
+    <div id="spacing" class="ws-stack"></div>
+  </section>
+
+  <section>
+    <div class="section-head"><span class="n">10</span><h2 class="ws-h2">Radius</h2></div>
+    <div class="row" id="radius"></div>
+  </section>
+
+  <section>
+    <div class="section-head"><span class="n">11</span><h2 class="ws-h2">Elevation</h2></div>
+    <div class="row" id="shadow" style="gap:var(--ws-space-8)"></div>
+  </section>
+
+  <footer style="padding-top:var(--ws-space-12);color:var(--ws-color-text-subtle);font-size:var(--ws-text-sm)">
+    Wavestone Design System · derived from URD 2024/25 · tokens in <code>wavestone-tokens.css</code> / <code>wavestone-tokens.json</code>
+  </footer>
+</div>
+
+<script>
+  const swatch = (name, varName) => `
+    <div class="swatch">
+      <div class="chip" style="background:var(${varName})"></div>
+      <div class="meta"><b>${name}</b><code>${varName}</code></div>
+    </div>`;
+  const scales = {
+    indigo: [50,100,200,300,400,500,600,700,800,900,950],
+    green:  [50,100,200,300,400,500,600,700,800],
+    teal:   [300,400,500,600,700],
+    ink:    [50,100,200,300,400,500,600,700,800,900]
+  };
+  for (const [fam, steps] of Object.entries(scales)) {
+    document.getElementById(fam).innerHTML =
+      steps.map(s => swatch(`${fam}-${s}`, `--ws-${fam}-${s}`)).join('');
+  }
+  // spacing
+  const sp = [1,2,3,4,6,8,12,16,24];
+  document.getElementById('spacing').innerHTML = sp.map(s => `
+    <div class="row"><span class="tag" style="width:90px;font-family:var(--ws-font-mono);font-size:12px;color:var(--ws-color-text-muted)">space-${s}</span>
+    <div class="space-demo" style="height:20px;width:var(--ws-space-${s})"></div></div>`).join('');
+  // radius
+  const rad = ['sm','md','lg','xl','2xl','3xl','pill'];
+  document.getElementById('radius').innerHTML = rad.map(r => `
+    <div class="radius-demo" style="border-radius:var(--ws-radius-${r})">${r}</div>`).join('');
+  // shadow
+  const sh = ['xs','sm','md','lg','xl','brand'];
+  document.getElementById('shadow').innerHTML = sh.map(s => `
+    <div class="shadow-demo" style="box-shadow:var(--ws-shadow-${s})">${s}</div>`).join('');
+</script>
+</body>
+</html>
