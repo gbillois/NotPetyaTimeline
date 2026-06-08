@@ -426,6 +426,7 @@
         <div class="toggle-row"><label for="t-sev">Sévérité</label><input type="checkbox" id="t-sev"></div>
         <div class="toggle-row"><label for="t-art">Artefacts</label><input type="checkbox" id="t-art"></div>
         <div class="toggle-row"><label for="t-play">Lecture automatique</label><input type="checkbox" id="t-play"></div>
+        <div class="toggle-row"><label for="t-reveal" title="Masque les événements à venir : la timeline se dévoile au fur et à mesure que l'on avance la tête de lecture (▶, →, glisser)">Découverte progressive</label><input type="checkbox" id="t-reveal"></div>
       </div>
 
       <div class="group">
@@ -568,6 +569,10 @@ const showList     = LAYOUT.showEventList !== false;
 const showSeverity = LAYOUT.showSeverity  !== false;
 const showArtifacts= LAYOUT.showArtifacts !== false;
 const showPlayback = LAYOUT.showPlayback  !== false;
+// Progressive reveal: hide everything past the playhead so steps are
+// discovered one at a time as the presenter advances the timeline.
+const reveal       = LAYOUT.progressiveReveal === true;
+const EPS          = 1e-6;
 
 const DEFAULT_PHASE_COLORS = ['#d4a03c','#dc3c28','#b4afa5','#6c9b7d','#7d8bb0','#b07d9b'];
 const phaseById = (id) => PHASES.find(p => p.id === id);
@@ -889,7 +894,8 @@ const RegionMap = ({ events, currentTime, activeEvent }) => {
 const niceStep = (span) => { const r = span / 5; const p = Math.pow(10, Math.floor(Math.log10(r))); const m = r / p; return (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10) * p; };
 
 // ═══════════════════════ TIMELINE TRACK ═══════════════════════
-const TimelineTrack = ({ events, phases, currentTime, setCurrentTime, activeId, setActiveId, setPlaying }) => {
+const TimelineTrack = ({ events, phases, currentTime, setCurrentTime, activeId, setActiveId, setPlaying, reveal }) => {
+  const revealed = (t) => !reveal || t <= currentTime + EPS;
   const trackRef = React.useRef(null);
   const [hoverT, setHoverT] = React.useState(null);
   const [dragging, setDragging] = React.useState(false);
@@ -927,18 +933,18 @@ const TimelineTrack = ({ events, phases, currentTime, setCurrentTime, activeId, 
     <div style={{ width:'100%', position:'relative' }}>
       {/* Phase labels */}
       <div style={{ position:'relative', height:18, marginBottom:4 }}>
-        {phases.map(p => (
+        {phases.map(p => revealed(p.start) && (
           <div key={p.id} style={{ position:'absolute', left:`${p.start*100}%`, width:`${(p.end-p.start)*100}%`, top:0, paddingLeft:8,
             fontFamily:F.mono, fontSize:9, letterSpacing:'0.14em', textTransform:'uppercase',
             color: phaseColor(p.id), fontWeight:700, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
             <span>{p.label}</span>
-            {p.range && <span style={{ opacity:0.55, marginLeft:8, fontWeight:500 }}>{p.range}</span>}
+            {p.range && !reveal && <span style={{ opacity:0.55, marginLeft:8, fontWeight:500 }}>{p.range}</span>}
           </div>
         ))}
       </div>
       {/* Ticks */}
       <div style={{ position:'relative', height:16, marginBottom:6, fontFamily:F.mono, fontSize:9.5, color:C.subtle, letterSpacing:'0.08em' }}>
-        {ticks.map((tick, i) => (
+        {ticks.filter(tick => revealed(tick.t)).map((tick, i) => (
           <div key={i} style={{ position:'absolute', left:`${tick.t*100}%`,
             transform: tick.t >= 0.999 ? 'translateX(-100%)' : tick.t <= 0.001 ? 'translateX(0)' : 'translateX(-50%)', whiteSpace:'nowrap' }}>
             <span style={{ display:'inline-block', borderLeft:`1px solid ${C.borderStrong}`, paddingLeft:4, paddingTop:1 }}>{tick.label}</span>
@@ -948,15 +954,20 @@ const TimelineTrack = ({ events, phases, currentTime, setCurrentTime, activeId, 
       {/* Track */}
       <div ref={trackRef} onMouseMove={onMove} onMouseLeave={() => setHoverT(null)} onMouseDown={onDown}
         style={{ position:'relative', height:62, cursor:'pointer', userSelect:'none' }}>
-        {phases.map(p => (
-          <div key={p.id} style={{ position:'absolute', left:`${p.start*100}%`, width:`${(p.end-p.start)*100}%`, top:22, height:18,
-            background: hexToRgba(phaseColor(p.id), 0.14), borderLeft:`1px solid ${C.line}` }} />
-        ))}
+        {phases.map(p => {
+          if (!revealed(p.start)) return null;
+          const segEnd = reveal ? Math.min(p.end, currentTime) : p.end;
+          return (
+            <div key={p.id} style={{ position:'absolute', left:`${p.start*100}%`, width:`${(segEnd-p.start)*100}%`, top:22, height:18,
+              background: hexToRgba(phaseColor(p.id), 0.14), borderLeft:`1px solid ${C.line}` }} />
+          );
+        })}
         <div style={{ position:'absolute', left:0, width:`${currentTime*100}%`, top:22, height:18,
           background:`linear-gradient(90deg, ${hexToRgba(firstC,0.35)} 0%, ${hexToRgba(C.accent,0.5)} 50%, ${hexToRgba(lastC,0.25)} 100%)`,
           pointerEvents:'none', mixBlendMode:isWavestone?'multiply':'screen' }} />
         <div style={{ position:'absolute', left:0, right:0, top:30, height:2, background:C.borderStrong, pointerEvents:'none' }} />
         {events.map((evt, i) => {
+          if (!revealed(evt.t)) return null;
           const active = evt.id === activeId, fired = evt.t <= currentTime, color = phaseColor(evt.phase);
           const stagger = (i % 2 === 0) ? -1 : 1;
           return (
@@ -1039,8 +1050,9 @@ const EventDetail = ({ event }) => {
   );
 };
 
-const EventList = ({ events, activeId, onSelect, currentTime }) => {
+const EventList = ({ events, activeId, onSelect, currentTime, reveal }) => {
   const listRef = React.useRef(null), activeRef = React.useRef(null);
+  const shown = reveal ? events.filter(e => e.t <= currentTime + EPS) : events;
   React.useEffect(() => {
     if (activeRef.current && listRef.current) {
       const li = activeRef.current, ul = listRef.current;
@@ -1052,9 +1064,9 @@ const EventList = ({ events, activeId, onSelect, currentTime }) => {
   return (
     <div ref={listRef} style={{ height:'100%', overflowY:'auto', padding:'16px 0' }}>
       <div style={{ padding:'0 20px 12px', fontFamily:F.mono, fontSize:10, letterSpacing:'0.18em', textTransform:'uppercase', color:C.subtle }}>
-        Chronology · {events.length} records
+        Chronology · {shown.length} {reveal ? 'revealed' : 'records'}
       </div>
-      {events.map(evt => {
+      {shown.map(evt => {
         const active = evt.id === activeId, fired = evt.t <= currentTime, color = phaseColor(evt.phase);
         return (
           <div key={evt.id} ref={active?activeRef:null} onClick={() => onSelect(evt)}
@@ -1180,7 +1192,7 @@ const App = () => {
           {META.title || 'Timeline'}{META.subtitle && <span style={{ color:isWavestone?'rgba(255,255,255,0.64)':C.subtle, fontStyle:isWavestone?'normal':'italic', fontWeight:400 }}> {META.subtitle}</span>}
         </div>
         <div style={{ marginLeft:'auto', display:'flex', gap:24, alignItems:'center', flexWrap:'wrap' }}>
-          <Stat label="Records" value={`${firedCount} / ${events.length}`} />
+          <Stat label="Records" value={reveal ? `${firedCount}` : `${firedCount} / ${events.length}`} />
           {currentPhase.label && <Stat label="Phase" value={phaseLabel(currentPhase.id)} mono={false} accent />}
           <Stat label="Playhead" value={`${Math.round(currentTime*100)}%`} />
         </div>
@@ -1207,7 +1219,7 @@ const App = () => {
         </div>
         <div style={{ flex:1, minHeight:0, display:'flex', alignItems:'center' }}>
           <div style={{ width:'100%' }}>
-            <TimelineTrack events={events} phases={phases} currentTime={currentTime} setCurrentTime={setCurrentTime} activeId={activeId} setActiveId={setActiveId} setPlaying={setPlaying} />
+            <TimelineTrack events={events} phases={phases} currentTime={currentTime} setCurrentTime={setCurrentTime} activeId={activeId} setActiveId={setActiveId} setPlaying={setPlaying} reveal={reveal} />
           </div>
         </div>
         <div style={{ fontFamily:F.mono, fontSize:9.5, letterSpacing:'0.14em', color:C.subtle, textTransform:'uppercase', textAlign:'center' }}>
@@ -1218,7 +1230,7 @@ const App = () => {
       {/* Row 3 */}
       {showList && (
         <aside style={{ gridRow:'3 / 4', gridColumn: String(listCol), ...edge(listCol, detailCol), overflow:'hidden', background:isWavestone?C.panel:'rgba(10,9,7,0.6)', borderRadius:C.radius, boxShadow:C.shadow, minHeight:0 }}>
-          <EventList events={events} activeId={activeId} onSelect={(e) => { setActiveId(e.id); setCurrentTime(e.t); setPlaying(false); }} currentTime={currentTime} />
+          <EventList events={events} activeId={activeId} onSelect={(e) => { setActiveId(e.id); setCurrentTime(e.t); setPlaying(false); }} currentTime={currentTime} reveal={reveal} />
         </aside>
       )}
       <main style={{ gridRow:'3 / 4', gridColumn: String(detailCol), overflow:'hidden', background:isWavestone?C.panel:'rgba(10,9,7,0.4)', borderRadius:C.radius, boxShadow:C.shadow, minHeight:0, ...(mapSide==='right' ? edge(detailCol, mapCol) : edge(detailCol, listCol)) }}>
@@ -1346,7 +1358,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App />);
         fontTitle: 'Fraunces', fontBody: 'Inter', fontMono: 'JetBrains Mono',
       }, cfg.theme || {});
       if (!THEME_PRESETS[cfg.theme.preset]) cfg.theme.preset = 'cyber-dark';
-      cfg.layout = Object.assign({ showMap: true, showEventList: true, showSeverity: true, showArtifacts: true, showPlayback: true, mapSide: 'right' }, cfg.layout || {});
+      cfg.layout = Object.assign({ showMap: true, showEventList: true, showSeverity: true, showArtifacts: true, showPlayback: true, progressiveReveal: false, mapSide: 'right' }, cfg.layout || {});
       cfg.map = Object.assign({ mode: 'globe' }, cfg.map || {});
       const presetPhaseColors = THEME_PRESETS[cfg.theme.preset].phaseColors;
       let events = Array.isArray(cfg.events) ? cfg.events.slice() : [];
@@ -1607,6 +1619,7 @@ RENDERER_SRC,
       $('t-sev').checked = ly.showSeverity !== false;
       $('t-art').checked = ly.showArtifacts !== false;
       $('t-play').checked = ly.showPlayback !== false;
+      $('t-reveal').checked = ly.progressiveReveal === true;
       // Per-phase color pickers
       const box = $('phase-colors'); box.innerHTML = '';
       (config.phases || []).forEach((p, i) => {
@@ -1920,7 +1933,7 @@ RENDERER_SRC,
     $('f-title').addEventListener('change', e => { config.theme.fontTitle = e.target.value; pushJson(); renderPreview(); });
     $('f-body').addEventListener('change', e => { config.theme.fontBody = e.target.value; pushJson(); renderPreview(); });
     $('f-mono').addEventListener('change', e => { config.theme.fontMono = e.target.value; pushJson(); renderPreview(); });
-    [['t-map','showMap'],['t-list','showEventList'],['t-sev','showSeverity'],['t-art','showArtifacts'],['t-play','showPlayback']].forEach(([id, key]) => {
+    [['t-map','showMap'],['t-list','showEventList'],['t-sev','showSeverity'],['t-art','showArtifacts'],['t-play','showPlayback'],['t-reveal','progressiveReveal']].forEach(([id, key]) => {
       $(id).addEventListener('change', e => { config.layout[key] = e.target.checked; pushJson(); renderPreview(); });
     });
 
