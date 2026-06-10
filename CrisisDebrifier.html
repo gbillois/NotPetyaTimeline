@@ -426,6 +426,7 @@
         <div class="toggle-row"><label for="t-sev">Sévérité</label><input type="checkbox" id="t-sev"></div>
         <div class="toggle-row"><label for="t-art">Artefacts</label><input type="checkbox" id="t-art"></div>
         <div class="toggle-row"><label for="t-play">Lecture automatique</label><input type="checkbox" id="t-play"></div>
+        <div class="toggle-row"><label for="t-step">Mode pas à pas (présentation)</label><input type="checkbox" id="t-step"></div>
       </div>
 
       <div class="group">
@@ -568,6 +569,7 @@ const showList     = LAYOUT.showEventList !== false;
 const showSeverity = LAYOUT.showSeverity  !== false;
 const showArtifacts= LAYOUT.showArtifacts !== false;
 const showPlayback = LAYOUT.showPlayback  !== false;
+const stepByStep   = LAYOUT.stepByStep    === true;
 
 const DEFAULT_PHASE_COLORS = ['#d4a03c','#dc3c28','#b4afa5','#6c9b7d','#7d8bb0','#b07d9b'];
 const phaseById = (id) => PHASES.find(p => p.id === id);
@@ -958,6 +960,7 @@ const TimelineTrack = ({ events, phases, currentTime, setCurrentTime, activeId, 
         <div style={{ position:'absolute', left:0, right:0, top:30, height:2, background:C.borderStrong, pointerEvents:'none' }} />
         {events.map((evt, i) => {
           const active = evt.id === activeId, fired = evt.t <= currentTime, color = phaseColor(evt.phase);
+          if (stepByStep && !fired) return null;
           const stagger = (i % 2 === 0) ? -1 : 1;
           return (
             <div key={evt.id} onClick={(e) => { e.stopPropagation(); setActiveId(evt.id); setCurrentTime(evt.t); setPlaying(false); }}
@@ -1040,6 +1043,7 @@ const EventDetail = ({ event }) => {
 };
 
 const EventList = ({ events, activeId, onSelect, currentTime }) => {
+  const displayEvents = stepByStep ? events.filter(e => e.t <= currentTime + 0.001) : events;
   const listRef = React.useRef(null), activeRef = React.useRef(null);
   React.useEffect(() => {
     if (activeRef.current && listRef.current) {
@@ -1052,9 +1056,9 @@ const EventList = ({ events, activeId, onSelect, currentTime }) => {
   return (
     <div ref={listRef} style={{ height:'100%', overflowY:'auto', padding:'16px 0' }}>
       <div style={{ padding:'0 20px 12px', fontFamily:F.mono, fontSize:10, letterSpacing:'0.18em', textTransform:'uppercase', color:C.subtle }}>
-        Chronology · {events.length} records
+        Chronology · {displayEvents.length} records
       </div>
-      {events.map(evt => {
+      {displayEvents.map(evt => {
         const active = evt.id === activeId, fired = evt.t <= currentTime, color = phaseColor(evt.phase);
         return (
           <div key={evt.id} ref={active?activeRef:null} onClick={() => onSelect(evt)}
@@ -1211,7 +1215,10 @@ const App = () => {
           </div>
         </div>
         <div style={{ fontFamily:F.mono, fontSize:9.5, letterSpacing:'0.14em', color:C.subtle, textTransform:'uppercase', textAlign:'center' }}>
-          ← → step events &nbsp;·&nbsp; {showPlayback ? 'space play/pause · ' : ''}drag track to scrub &nbsp;·&nbsp; click pins to jump
+          {stepByStep
+            ? '→ reveal next · ← go back · click revealed pins to jump'
+            : <>← → step events &nbsp;·&nbsp; {showPlayback ? 'space play/pause · ' : ''}drag track to scrub &nbsp;·&nbsp; click pins to jump</>
+          }
         </div>
       </section>
 
@@ -1346,7 +1353,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App />);
         fontTitle: 'Fraunces', fontBody: 'Inter', fontMono: 'JetBrains Mono',
       }, cfg.theme || {});
       if (!THEME_PRESETS[cfg.theme.preset]) cfg.theme.preset = 'cyber-dark';
-      cfg.layout = Object.assign({ showMap: true, showEventList: true, showSeverity: true, showArtifacts: true, showPlayback: true, mapSide: 'right' }, cfg.layout || {});
+      cfg.layout = Object.assign({ showMap: true, showEventList: true, showSeverity: true, showArtifacts: true, showPlayback: true, mapSide: 'right', stepByStep: false }, cfg.layout || {});
       cfg.map = Object.assign({ mode: 'globe' }, cfg.map || {});
       const presetPhaseColors = THEME_PRESETS[cfg.theme.preset].phaseColors;
       let events = Array.isArray(cfg.events) ? cfg.events.slice() : [];
@@ -1607,6 +1614,7 @@ RENDERER_SRC,
       $('t-sev').checked = ly.showSeverity !== false;
       $('t-art').checked = ly.showArtifacts !== false;
       $('t-play').checked = ly.showPlayback !== false;
+      $('t-step').checked = ly.stepByStep === true;
       // Per-phase color pickers
       const box = $('phase-colors'); box.innerHTML = '';
       (config.phases || []).forEach((p, i) => {
@@ -1920,7 +1928,7 @@ RENDERER_SRC,
     $('f-title').addEventListener('change', e => { config.theme.fontTitle = e.target.value; pushJson(); renderPreview(); });
     $('f-body').addEventListener('change', e => { config.theme.fontBody = e.target.value; pushJson(); renderPreview(); });
     $('f-mono').addEventListener('change', e => { config.theme.fontMono = e.target.value; pushJson(); renderPreview(); });
-    [['t-map','showMap'],['t-list','showEventList'],['t-sev','showSeverity'],['t-art','showArtifacts'],['t-play','showPlayback']].forEach(([id, key]) => {
+    [['t-map','showMap'],['t-list','showEventList'],['t-sev','showSeverity'],['t-art','showArtifacts'],['t-play','showPlayback'],['t-step','stepByStep']].forEach(([id, key]) => {
       $(id).addEventListener('change', e => { config.layout[key] = e.target.checked; pushJson(); renderPreview(); });
     });
 
