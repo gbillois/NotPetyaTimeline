@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="fonts/fonts-local.css">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { background:#000; width:1920px; height:1080px; overflow:hidden; }
+  #stage { position:absolute; width:1920px; height:1080px; background:#0B0716; overflow:hidden;
+           font-family:'Inter',sans-serif; color:#fff; }
+  .scene { position:absolute; inset:0; opacity:0; }
+  canvas#map, canvas#grain { position:absolute; inset:0; }
+  .eyebrow { font-family:'IBM Plex Mono',monospace; font-size:22px; letter-spacing:0.32em;
+             text-transform:uppercase; color:rgba(255,255,255,0.55); font-weight:500; }
+  .display { font-family:'Poppins',sans-serif; font-weight:800; letter-spacing:-0.015em; }
+  .mono { font-family:'IBM Plex Mono',monospace; }
+
+  /* ---------- S1 cold open ---------- */
+  #s1 .wrap { position:absolute; inset:0; display:flex; flex-direction:column;
+              align-items:center; justify-content:center; }
+  #s1-eyebrow { position:absolute; top:84px; left:0; right:0; text-align:center; }
+  #s1-date { font-family:'IBM Plex Mono',monospace; font-weight:500; font-size:120px;
+             letter-spacing:0.12em; color:#fff; }
+  #s1-17 { font-family:'IBM Plex Mono',monospace; font-size:30px; letter-spacing:0.28em;
+           color:#D8412F; margin-top:34px; text-transform:uppercase; }
+  #s1-title { font-family:'Poppins',sans-serif; font-weight:800; font-size:218px;
+              letter-spacing:0.015em; line-height:1; position:relative; color:#fff; }
+  #s1-sub { font-size:30px; font-weight:400; color:rgba(255,255,255,0.62);
+            letter-spacing:0.06em; margin-top:38px; }
+
+  /* ---------- S2 weapon chain ---------- */
+  #s2-eyebrow { position:absolute; top:96px; left:160px; color:#E8A33D; }
+  #s2-head { position:absolute; top:140px; left:160px; font-size:64px; font-weight:700;
+             font-family:'Poppins',sans-serif; color:#fff; }
+  #s2-chain { position:absolute; top:0; left:0; width:1920px; height:1080px; }
+  .node { position:absolute; width:310px; }
+  .node.up { bottom:560px; }
+  .node.down { top:600px; }
+  .node .nd-date { font-family:'IBM Plex Mono',monospace; font-size:24px; color:#E8A33D;
+                   letter-spacing:0.08em; margin-bottom:12px; }
+  .node .nd-title { font-family:'Poppins',sans-serif; font-weight:700; font-size:32px;
+                    line-height:1.2; margin-bottom:10px; }
+  .node .nd-sub { font-size:21px; color:rgba(255,255,255,0.6); line-height:1.45; }
+  .node.up .nd-date { margin-bottom:0; margin-top:12px; }
+  .chain-dot { position:absolute; top:529px; width:22px; height:22px; border-radius:50%;
+               background:#E8A33D; box-shadow:0 0 24px rgba(232,163,61,0.9); }
+  #s2-line { position:absolute; left:190px; top:538px; height:3px; width:0;
+             background:linear-gradient(90deg,#E8A33D,#D8412F); }
+
+  /* ---------- map scenes shared ---------- */
+  .stamp { position:absolute; font-family:'IBM Plex Mono',monospace; letter-spacing:0.3em;
+           text-transform:uppercase; }
+  #s3-eyebrow { position:absolute; top:96px; left:160px; color:#FF6B5B; }
+  #s3-head { position:absolute; top:140px; left:160px; font-size:64px; font-weight:700;
+             font-family:'Poppins',sans-serif; }
+  #s3-panel { position:absolute; left:160px; top:330px; width:560px; }
+  #s3-stat { font-family:'Poppins',sans-serif; font-weight:800; font-size:230px; line-height:1;
+             color:#FF4530; letter-spacing:-0.02em; }
+  #s3-statsub { font-size:30px; color:rgba(255,255,255,0.75); margin-top:10px; width:540px; line-height:1.45; }
+  #s3-victims { margin-top:54px; }
+  .victim { font-family:'IBM Plex Mono',monospace; font-size:26px; color:rgba(255,255,255,0.85);
+            margin-bottom:16px; letter-spacing:0.06em; }
+  .victim::before { content:'— '; color:#FF4530; }
+
+  #s4-eyebrow { position:absolute; top:96px; left:160px; color:#FF6B5B; }
+  #s4-head { position:absolute; top:140px; left:160px; font-size:64px; font-weight:700;
+             font-family:'Poppins',sans-serif; }
+  #s4-list { position:absolute; right:150px; top:300px; width:600px; }
+  .corp { margin-bottom:34px; border-left:4px solid #FF4530; padding-left:24px; }
+  .corp .c-name { font-family:'Poppins',sans-serif; font-weight:700; font-size:40px; letter-spacing:0.02em; }
+  .corp .c-fig { font-family:'IBM Plex Mono',monospace; font-size:24px; color:#FF8A7A; margin-top:4px; }
+  #s4-bottom { position:absolute; left:160px; bottom:110px; font-family:'IBM Plex Mono',monospace;
+               font-size:30px; letter-spacing:0.18em; color:rgba(255,255,255,0.85); text-transform:uppercase; }
+  #s4-bottom b { color:#FF4530; }
+
+  /* ---------- S5 Ghana ---------- */
+  #s5-eyebrow { position:absolute; top:96px; left:160px; color:#04F06A; }
+  #s5-head { position:absolute; top:140px; left:160px; font-size:64px; font-weight:700; font-family:'Poppins',sans-serif; }
+  #s5-panel { position:absolute; left:160px; top:330px; width:640px; }
+  #s5-one { font-family:'Poppins',sans-serif; font-weight:800; font-size:230px; line-height:1; color:#04F06A; }
+  #s5-onesub { font-size:30px; color:rgba(255,255,255,0.8); line-height:1.5; margin-top:8px; width:600px; }
+  #s5-strip { margin-top:58px; font-family:'IBM Plex Mono',monospace; font-size:30px; color:#A6FACA;
+              letter-spacing:0.05em; line-height:1.7; }
+  #s5-paper { margin-top:20px; font-size:25px; color:rgba(255,255,255,0.55); font-style:italic; }
+
+  /* ---------- S6 fallout ---------- */
+  #s6-eyebrow { position:absolute; top:96px; left:160px; color:rgba(255,255,255,0.55); }
+  #s6-head { position:absolute; top:140px; left:160px; font-size:64px; font-weight:700; font-family:'Poppins',sans-serif; }
+  #s6-grid { position:absolute; left:160px; right:160px; top:320px; display:grid;
+             grid-template-columns:1fr 1fr; gap:70px 90px; }
+  .fact .f-big { font-family:'Poppins',sans-serif; font-weight:800; font-size:84px; line-height:1.05;
+                 letter-spacing:-0.01em; }
+  .fact .f-sub { font-size:26px; color:rgba(255,255,255,0.62); margin-top:14px; line-height:1.5; }
+  .fact .f-tag { font-family:'IBM Plex Mono',monospace; font-size:21px; letter-spacing:0.24em;
+                 text-transform:uppercase; color:rgba(255,255,255,0.4); margin-bottom:16px; }
+
+  /* ---------- S7 lessons ---------- */
+  #s7 { background:radial-gradient(120% 120% at 25% 15%, #5226E0 0%, #451DC7 38%, #2D1380 100%); }
+  #s7-eyebrow { position:absolute; top:110px; left:160px; color:#04F06A; }
+  #s7-lessons { position:absolute; left:160px; top:250px; width:1640px; }
+  .lesson { display:flex; gap:40px; margin-bottom:58px; align-items:baseline; }
+  .lesson .l-num { font-family:'IBM Plex Mono',monospace; font-size:34px; color:#04F06A; font-weight:500; }
+  .lesson .l-txt { font-family:'Poppins',sans-serif; font-weight:600; font-size:46px; line-height:1.25; }
+  #s7-final { position:absolute; left:160px; bottom:130px; font-family:'Poppins',sans-serif;
+              font-weight:800; font-size:84px; line-height:1.15; letter-spacing:-0.01em; }
+  #s7-final span { color:#04F06A; }
+
+  /* ---------- end card ---------- */
+  #endcard { position:absolute; inset:0; background:#0B0716; display:flex; flex-direction:column;
+             align-items:center; justify-content:center; opacity:0; }
+  #ec-title { font-family:'Poppins',sans-serif; font-weight:800; font-size:120px; letter-spacing:0.04em; }
+  #ec-date { font-family:'IBM Plex Mono',monospace; font-size:30px; letter-spacing:0.4em;
+             color:rgba(255,255,255,0.55); margin-top:26px; }
+  #ec-brand { position:absolute; bottom:110px; font-family:'IBM Plex Mono',monospace; font-size:22px;
+              letter-spacing:0.3em; color:rgba(255,255,255,0.45); text-transform:uppercase; }
+  #ec-wave { margin-top:60px; }
+
+  #vignette { position:absolute; inset:0; pointer-events:none;
+              background:radial-gradient(130% 130% at 50% 42%, rgba(0,0,0,0) 55%, rgba(0,0,0,0.55) 100%); }
+  #fade { position:absolute; inset:0; background:#000; opacity:0; pointer-events:none; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="map" width="1920" height="1080"></canvas>
+
+  <div class="scene" id="s1">
+    <div id="s1-eyebrow" class="eyebrow">Wavestone · Cyber Crisis Debrief</div>
+    <div class="wrap">
+      <div id="s1-date">27.06.2017</div>
+      <div id="s1-17">17 minutes to lose everything</div>
+      <div id="s1-title">NOTPETYA</div>
+      <div id="s1-sub">The most destructive cyberattack in history</div>
+    </div>
+  </div>
+
+  <div class="scene" id="s2">
+    <div id="s2-eyebrow" class="eyebrow">Act I — The Weapon</div>
+    <div id="s2-head">Built by a state. Lost by a state.</div>
+    <div id="s2-line"></div>
+    <div id="s2-chain"></div>
+  </div>
+
+  <div class="scene" id="s3">
+    <div id="s3-eyebrow" class="eyebrow">Act II — Day 0 · Kyiv · 10:30</div>
+    <div id="s3-head">One poisoned update</div>
+    <div id="s3-panel">
+      <div id="s3-stat">10%</div>
+      <div id="s3-statsub">of all computers in Ukraine — wiped within the hour</div>
+      <div id="s3-victims">
+        <div class="victim" id="v1">Banks · ATMs display skulls</div>
+        <div class="victim" id="v2">Boryspil airport · Kyiv metro</div>
+        <div class="victim" id="v3">Government ministries</div>
+        <div class="victim" id="v4">Chernobyl radiation monitors</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="scene" id="s4">
+    <div id="s4-eyebrow" class="eyebrow">Act II — Global Contagion</div>
+    <div id="s4-head">The worm ignores borders</div>
+    <div id="s4-list">
+      <div class="corp" id="c1"><div class="c-name">MAERSK</div><div class="c-fig">49,000 laptops destroyed · 17 minutes</div></div>
+      <div class="corp" id="c2"><div class="c-name">MERCK</div><div class="c-fig">vaccine production halted</div></div>
+      <div class="corp" id="c3"><div class="c-name">FEDEX / TNT</div><div class="c-fig">Europe paralyzed · $400M</div></div>
+      <div class="corp" id="c4"><div class="c-name">SAINT-GOBAIN</div><div class="c-fig">€250M lost</div></div>
+      <div class="corp" id="c5"><div class="c-name">MONDELĒZ</div><div class="c-fig">24,000 laptops · $180M</div></div>
+    </div>
+    <div id="s4-bottom">None were targets. <b>All were collateral damage.</b></div>
+  </div>
+
+  <div class="scene" id="s5">
+    <div id="s5-eyebrow" class="eyebrow">The Recovery</div>
+    <div id="s5-head">Saved by an accident</div>
+    <div id="s5-panel">
+      <div id="s5-one">1</div>
+      <div id="s5-onesub">surviving domain controller — in Ghana, offline during a power outage</div>
+      <div id="s5-strip">10 days · 4,000 servers<br>45,000 PCs rebuilt</div>
+      <div id="s5-paper">…running on WhatsApp and paper</div>
+    </div>
+  </div>
+
+  <div class="scene" id="s6">
+    <div id="s6-eyebrow" class="eyebrow">Act III — The Fallout</div>
+    <div id="s6-head">Not crime. A weapon.</div>
+    <div id="s6-grid">
+      <div class="fact" id="f1">
+        <div class="f-tag">The truth</div>
+        <div class="f-big">A wiper —<br>not ransomware</div>
+        <div class="f-sub">Recovery was never possible. The ransom note was a disguise.</div>
+      </div>
+      <div class="fact" id="f2">
+        <div class="f-tag">The bill</div>
+        <div class="f-big" id="f2-num">$0</div>
+        <div class="f-sub">the costliest cyberattack in history</div>
+      </div>
+      <div class="fact" id="f3">
+        <div class="f-tag">The attacker</div>
+        <div class="f-big">GRU Unit 74455<br>“Sandworm”</div>
+        <div class="f-sub">named by five nations — February 2018</div>
+      </div>
+      <div class="fact" id="f4">
+        <div class="f-tag">The aftershock</div>
+        <div class="f-big">“Act of war”</div>
+        <div class="f-sub" id="f4-sub">insurers refuse to pay — Merck fights 5 years to win its $1.4B</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="scene" id="s7">
+    <svg width="1920" height="1080" style="position:absolute;inset:0" viewBox="0 0 1920 1080" fill="none">
+      <path id="wave1" d="M -50 980 C 500 760, 1100 1090, 1970 820" stroke="#04F06A" stroke-width="3" opacity="0.85"/>
+      <path id="wave2" d="M -50 1040 C 520 820, 1150 1150, 1970 880" stroke="#ffffff" stroke-width="2" opacity="0.35"/>
+    </svg>
+    <div id="s7-eyebrow" class="eyebrow">What this means for the board</div>
+    <div id="s7-lessons">
+      <div class="lesson" id="l1"><div class="l-num">01</div>
+        <div class="l-txt">You don’t have to be the target to be destroyed.</div></div>
+      <div class="lesson" id="l2"><div class="l-num">02</div>
+        <div class="l-txt">Your most trusted supplier can be the way in.</div></div>
+      <div class="lesson" id="l3"><div class="l-num">03</div>
+        <div class="l-txt">Resilience can hang on a single offline server.</div></div>
+    </div>
+    <div id="s7-final">NotPetya wasn’t the last.<br><span>It was the first.</span></div>
+  </div>
+
+  <div id="endcard">
+    <div id="ec-title">NOTPETYA</div>
+    <div id="ec-date">27 · 06 · 2017</div>
+    <svg id="ec-wave" width="520" height="60" viewBox="0 0 520 60" fill="none">
+      <path d="M 5 50 C 140 5, 300 60, 515 18" stroke="#04F06A" stroke-width="3"/>
+    </svg>
+    <div id="ec-brand">Cyber Crisis Debrief · Wavestone</div>
+  </div>
+
+  <canvas id="grain" width="480" height="270"
+          style="width:1920px;height:1080px;opacity:0.07;mix-blend-mode:overlay"></canvas>
+  <div id="vignette"></div>
+  <div id="fade"></div>
+</div>
+
+<script src="timing.js"></script>
+<script src="land.js"></script>
+<script>
+/* ============ deterministic documentary renderer — window.seek(t) ============ */
+const $ = id => document.getElementById(id);
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const lerp = (a,b,t) => a + (b-a)*t;
+// progress 0→1 between t0,t1
+const prg = (t,t0,t1) => clamp((t-t0)/(t1-t0), 0, 1);
+const easeOut = p => 1 - Math.pow(1-p, 3);
+const easeInOut = p => p<0.5 ? 4*p*p*p : 1 - Math.pow(-2*p+2,3)/2;
+
+function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0;
+  let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; } }
+
+const T = window.TIMING;
+const S = {}; T.scenes.forEach(s => S[s.id] = s);
+const TOTAL = T.total;
+
+// scene visibility windows (start a bit before VO, end at next scene's start)
+const XFADE = 0.55;
+const win = {};
+T.scenes.forEach((s,i) => {
+  const start = s.voStart - XFADE + 0.05;
+  const end = (i+1 < T.scenes.length) ? T.scenes[i+1].voStart - XFADE + 0.05 : s.voEnd + 0.4;
+  win[s.id] = [start, end];
+});
+
+// fade in/out opacity for a scene window
+function sceneOpacity(t, id){
+  const [a,b] = win[id];
+  if (t < a || t > b + XFADE) return 0;
+  return Math.min(prg(t,a,a+XFADE), 1 - prg(t,b,b+XFADE));
+}
+
+/* ---------------- text helpers ---------------- */
+function show(el, t, t0, dur=0.7, rise=26){
+  const p = easeOut(prg(t, t0, t0+dur));
+  el.style.opacity = p;
+  el.style.transform = `translateY(${(1-p)*rise}px)`;
+  return p;
+}
+
+/* ---------------- map ---------------- */
+const mapC = $('map').getContext('2d');
+const grainC = $('grain').getContext('2d');
+
+const KYIV = [30.52, 50.45];
+const CAM_EU  = { lon:25.5, lat:49.2, s:40 };   // Ukraine/Europe view
+const CAM_W   = { lon:10,   lat:24,  s:5.6 };   // world view
+function proj(cam, lon, lat){
+  return [960 + (lon-cam.lon)*cam.s, 540 - (lat-cam.lat)*cam.s];
+}
+function camLerp(a,b,p){
+  return { lon:lerp(a.lon,b.lon,p), lat:lerp(a.lat,b.lat,p),
+           s:Math.exp(lerp(Math.log(a.s),Math.log(b.s),p)) };
+}
+
+// Ukraine infection dots: jittered around city anchors (deterministic)
+const UA_ANCHORS = [[30.52,50.45],[36.23,49.99],[30.73,46.48],[35.04,48.46],[24.03,49.84],
+                    [34.55,49.59],[32.06,49.44],[37.55,47.1],[33.4,52.0],[28.68,50.25]];
+const UA_DOTS = (() => { const r = mulberry32(1717); const d=[];
+  for (let i=0;i<70;i++){ const a = UA_ANCHORS[i % UA_ANCHORS.length];
+    d.push([a[0]+(r()-0.5)*4.2, a[1]+(r()-0.5)*2.6, r()]); } return d; })();
+
+// global spread targets (corporate hits first, then broad spread)
+const HITS = [
+  { c:[12.57,55.68], at:4.6,  big:true },   // Maersk Copenhagen
+  { c:[-74.29,40.68], at:8.9, big:true },   // Merck NJ
+  { c:[4.69,52.30], at:11.0, big:true },    // TNT Hoofddorp
+  { c:[2.35,48.85], at:12.0, big:true },    // Saint-Gobain Paris
+  { c:[-87.63,41.88], at:13.0, big:true },  // Mondelez Chicago
+  { c:[37.62,55.75], at:13.8, big:false },  // Rosneft Moscow
+];
+const SPREAD = (() => { const r = mulberry32(2727); const cities = [
+  [-0.12,51.5],[13.4,52.5],[-3.7,40.4],[9.19,45.46],[18.06,59.33],[19.04,47.5],
+  [28.98,41.01],[31.23,30.04],[77.2,28.6],[72.85,19.0],[103.85,1.29],[114.06,22.54],
+  [139.69,35.69],[151.21,-33.87],[-46.63,-23.55],[-58.38,-34.6],[-99.13,19.43],
+  [-79.38,43.65],[-118.24,34.05],[-122.42,37.77],[55.27,25.2],[126.98,37.57],
+  [100.5,13.75],[121.47,31.23],[-43.17,-22.9],[18.42,-33.92],[36.82,-1.29],
+  [44.43,26.1],[14.42,50.08],[21.01,52.23],[23.32,42.7],[26.1,44.43],[4.35,50.85],
+  [16.37,48.21],[24.94,60.17],[10.75,59.91],[-6.26,53.35],[-9.14,38.74],[12.5,41.9],
+  [33.0,35.0],[-77.0,38.9],[-71.06,42.36],[-95.37,29.76],[-104.99,39.74]];
+  return cities.map((c,i) => [c[0]+(r()-0.5)*1.5, c[1]+(r()-0.5)*1.5, 4.0 + r()*10.5]);
+})();
+const GHANA = [-0.19, 5.60];
+
+function drawLand(cam, alpha, tint){
+  mapC.save();
+  mapC.globalAlpha = alpha;
+  mapC.beginPath();
+  for (const poly of window.LAND){
+    let first = true;
+    for (const [lon,lat] of poly){
+      const [x,y] = proj(cam, lon, lat);
+      if (first){ mapC.moveTo(x,y); first=false; } else mapC.lineTo(x,y);
+    }
+    mapC.closePath();
+  }
+  mapC.fillStyle = tint || '#272040';
+  mapC.fill();
+  mapC.strokeStyle = 'rgba(255,255,255,0.10)';
+  mapC.lineWidth = 1;
+  mapC.stroke();
+  mapC.restore();
+}
+
+function pulse(x, y, t0, t, color, maxR=70, n=3){
+  for (let i=0;i<n;i++){
+    const p = ((t - t0)*0.55 + i/n) % 1;
+    if (t < t0) continue;
+    mapC.beginPath();
+    mapC.arc(x, y, 8 + p*maxR, 0, 7);
+    mapC.strokeStyle = color.replace('A%', (0.55*(1-p)).toFixed(3));
+    mapC.lineWidth = 2.4;
+    mapC.stroke();
+  }
+}
+function dot(x,y,r,color,glow){
+  if (glow){ mapC.shadowColor = glow; mapC.shadowBlur = 18; }
+  mapC.beginPath(); mapC.arc(x,y,r,0,7); mapC.fillStyle = color; mapC.fill();
+  mapC.shadowBlur = 0;
+}
+function arc(from, to, p, color, lw=2){
+  if (p <= 0) return;
+  const mx = (from[0]+to[0])/2, my = (from[1]+to[1])/2;
+  const dx = to[0]-from[0], dy = to[1]-from[1];
+  const dist = Math.hypot(dx,dy);
+  const cx = mx - dy/dist * dist*0.22, cy = my + dx/dist * dist*0.22;
+  mapC.beginPath();
+  const N = 48;
+  for (let i=0;i<=N*p;i++){
+    const u = i/N;
+    const x = (1-u)*(1-u)*from[0] + 2*(1-u)*u*cx + u*u*to[0];
+    const y = (1-u)*(1-u)*from[1] + 2*(1-u)*u*cy + u*u*to[1];
+    if (i===0) mapC.moveTo(x,y); else mapC.lineTo(x,y);
+  }
+  mapC.strokeStyle = color; mapC.lineWidth = lw;
+  mapC.shadowColor = color; mapC.shadowBlur = 6;
+  mapC.stroke(); mapC.shadowBlur = 0;
+}
+
+/* ---------------- grain ---------------- */
+function drawGrain(frame){
+  const r = mulberry32(frame*7919+13);
+  const img = grainC.createImageData(480,270);
+  for (let i=0;i<img.data.length;i+=4){
+    const v = r()*255|0;
+    img.data[i]=v; img.data[i+1]=v; img.data[i+2]=v; img.data[i+3]=255;
+  }
+  grainC.putImageData(img,0,0);
+}
+
+/* ---------------- S2 chain nodes ---------------- */
+const NODES = [
+  { date:'c. 2013', title:'NSA builds EternalBlue', sub:'A Windows exploit, weaponized in secret' },
+  { date:'Aug 2016', title:'Stolen', sub:'“Shadow Brokers” breach the NSA arsenal' },
+  { date:'Mar 2017', title:'Microsoft patches', sub:'MS17-010 ships — much of the world won’t apply it' },
+  { date:'Apr 2017', title:'Dumped online', sub:'The exploit becomes free for anyone' },
+  { date:'May 2017', title:'WannaCry', sub:'The warning shot — ignored' },
+];
+const chain = $('s2-chain');
+NODES.forEach((n,i) => {
+  const x = 160 + i*340;
+  const el = document.createElement('div');
+  el.className = 'node ' + (i%2 ? 'down' : 'up'); el.id = 'node'+i;
+  el.style.left = x + 'px';
+  const parts = [`<div class="nd-date">${n.date}</div>`,
+                 `<div class="nd-title">${n.title}</div>`,
+                 `<div class="nd-sub">${n.sub}</div>`];
+  el.innerHTML = i%2 ? parts.join('') : parts[1] + parts[2] + parts[0];
+  chain.appendChild(el);
+  const d = document.createElement('div');
+  d.className = 'chain-dot'; d.id = 'cdot'+i;
+  d.style.left = x + 'px';
+  chain.appendChild(d);
+});
+
+/* ================= master seek ================= */
+window.seek = function(t){
+  const frame = Math.round(t*240);
+  drawGrain(frame);
+  mapC.clearRect(0,0,1920,1080);
+
+  // scene opacities
+  for (const s of T.scenes) $(s.id).style.opacity = sceneOpacity(t, s.id);
+
+  /* ----- S1 ----- */
+  {
+    const o = S.s1, r = mulberry32(frame*31+7);
+    show($('s1-eyebrow'), t, o.voStart-0.5, 0.8, 10);
+    // date flicker-in
+    const dp = prg(t, o.voStart-0.1, o.voStart+1.1);
+    const flick = dp < 1 ? (r() < 0.25 + dp*0.75 ? 1 : 0.15) : 1;
+    $('s1-date').style.opacity = dp > 0 ? (0.2 + 0.8*dp) * flick : 0;
+    show($('s1-17'), t, o.voStart+2.6, 0.8);
+    // title: appears at "This is the story of NotPetya" (~9.0s into VO)
+    const tp = prg(t, o.voStart+8.6, o.voStart+9.6);
+    const title = $('s1-title');
+    title.style.opacity = easeOut(tp);
+    const sc = lerp(1.06, 1.0, easeOut(tp));
+    title.style.transform = `scale(${sc})`;
+    // glitch chromatic shadows for ~1.2s after reveal
+    const g = clamp(1 - (t - (o.voStart+8.6))/1.4, 0, 1);
+    if (tp > 0 && g > 0){
+      const gx = (r()-0.5)*14*g, gy = (r()-0.5)*4*g;
+      title.style.textShadow = `${gx}px ${gy}px 0 rgba(216,65,47,0.75), ${-gx}px ${-gy}px 0 rgba(4,240,106,0.6)`;
+    } else title.style.textShadow = 'none';
+    // date & 17min recede when title lands
+    const rec = easeOut(prg(t, o.voStart+8.4, o.voStart+9.2));
+    $('s1-date').style.transform = `translateY(${-rec*120}px) scale(${1-rec*0.55})`;
+    if (rec > 0) $('s1-date').style.opacity = (1-rec*0.75) * (dp>0?1:0);
+    $('s1-17').style.opacity = Math.min(prg(t,o.voStart+2.6,o.voStart+3.4), 1-rec);
+    show($('s1-sub'), t, o.voStart+10.9, 0.9);
+  }
+
+  /* ----- S2 ----- */
+  {
+    const o = S.s2, base = o.voStart;
+    show($('s2-eyebrow'), t, base-0.3, 0.7, 12);
+    show($('s2-head'), t, base+0.0, 0.8);
+    const cues = [base+1.6, base+4.3, base+7.6, base+5.9, base+11.2];
+    NODES.forEach((n,i) => {
+      show($('node'+i), t, cues[i], 0.7, i%2 ? 30 : -30);
+      $('cdot'+i).style.opacity = prg(t, cues[i], cues[i]+0.4);
+    });
+    const lineP = easeInOut(prg(t, base+1.6, base+12.2));
+    $('s2-line').style.width = (lineP*1480) + 'px';
+  }
+
+  /* ----- S3 + S4 + S5 share the map canvas ----- */
+  const s3o = sceneOpacity(t,'s3'), s4o = sceneOpacity(t,'s4'), s5o = sceneOpacity(t,'s5');
+  if (s3o > 0 || s4o > 0 || s5o > 0){
+    const o3 = S.s3, o4 = S.s4, o5 = S.s5;
+    // camera: EU during s3, zoom to world at s4 start
+    const zp = easeInOut(prg(t, o4.voStart-0.4, o4.voStart+2.6));
+    const cam = camLerp(CAM_EU, CAM_W, zp);
+    const mapAlpha = Math.max(s3o, s4o, s5o);
+    // Ghana scene: dim the world
+    const dim = easeInOut(prg(t, o5.voStart-0.3, o5.voStart+1.5));
+    drawLand(cam, mapAlpha * (1 - dim*0.55), dim > 0.01 ? '#1A1530' : '#221C36');
+
+    const ky = proj(cam, KYIV[0], KYIV[1]);
+
+    if (s3o > 0 || s4o > 0){
+      mapC.save(); mapC.globalAlpha = Math.max(s3o, s4o) * (1-dim);
+      // Kyiv detonation at ~3.0s into s3 VO
+      const det = o3.voStart + 2.8;
+      if (t > det){
+        const flare = clamp(1-(t-det)/0.5, 0, 1);
+        if (flare > 0){ mapC.globalAlpha *= 1; dot(ky[0], ky[1], 14+60*(1-flare)*flare*4, `rgba(255,90,60,${0.25*flare})`); }
+        dot(ky[0], ky[1], 9, '#FF4530', '#FF4530');
+        pulse(ky[0], ky[1], det, t, 'rgba(255,69,48,A%)', 26*cam.s/5.6);
+      }
+      // Ukraine infection dots from ~5s
+      UA_DOTS.forEach(([lon,lat,rr]) => {
+        const t0 = det + 1.6 + rr*7.5;
+        const p = prg(t, t0, t0+0.5);
+        if (p > 0) dot(...proj(cam,lon,lat), 3.4*p*Math.min(cam.s/12,1.6)+1.2, `rgba(255,69,48,${0.5+0.4*p})`);
+      });
+      mapC.restore();
+    }
+
+    if (s4o > 0){
+      mapC.save(); mapC.globalAlpha = s4o * (1-dim*0.85);
+      const b4 = o4.voStart;
+      HITS.forEach(h => {
+        const t0 = b4 + h.at - 1.1;
+        const ap = easeInOut(prg(t, t0, t0+1.1));
+        const target = proj(cam, h.c[0], h.c[1]);
+        arc(ky, target, ap, 'rgba(255,110,80,0.65)', 2.2);
+        if (ap >= 1){
+          dot(target[0], target[1], h.big?7:5, '#FF4530', '#FF4530');
+          pulse(target[0], target[1], t0+1.1, t, 'rgba(255,69,48,A%)', 40, 2);
+        }
+      });
+      SPREAD.forEach(([lon,lat,at]) => {
+        const p = prg(t, b4+at, b4+at+0.4);
+        if (p > 0) dot(...proj(cam,lon,lat), 2.6*p+0.8, `rgba(255,69,48,${0.35+0.35*p})`);
+      });
+      mapC.restore();
+    }
+
+    if (s5o > 0){
+      const b5 = S.s5.voStart;
+      const gp = prg(t, b5+1.8, b5+2.6);
+      if (gp > 0){
+        mapC.save(); mapC.globalAlpha = s5o;
+        const g = proj(cam, GHANA[0], GHANA[1]);
+        dot(g[0], g[1], 8*gp, '#04F06A', '#04F06A');
+        pulse(g[0], g[1], b5+2.2, t, 'rgba(4,240,106,A%)', 90, 3);
+        // label
+        mapC.font = '500 24px "IBM Plex Mono"';
+        mapC.fillStyle = `rgba(166,250,202,${gp})`;
+        mapC.fillText('GHANA · 1 DOMAIN CONTROLLER', g[0]+28, g[1]+6);
+        mapC.restore();
+      }
+    }
+  }
+
+  /* ----- S3 text ----- */
+  {
+    const b = S.s3.voStart;
+    show($('s3-eyebrow'), t, b-0.3, 0.7, 12);
+    show($('s3-head'), t, b+0.0, 0.8);
+    const sp = prg(t, b+10.6, b+12.0);
+    $('s3-stat').style.opacity = sp > 0 ? 1 : 0;
+    $('s3-stat').textContent = Math.round(easeOut(sp)*10) + '%';
+    show($('s3-statsub'), t, b+11.4, 0.8);
+    show($('v1'), t, b+13.8, 0.5, 16);
+    show($('v2'), t, b+14.7, 0.5, 16);
+    show($('v3'), t, b+15.5, 0.5, 16);
+    show($('v4'), t, b+16.3, 0.5, 16);
+  }
+
+  /* ----- S4 text ----- */
+  {
+    const b = S.s4.voStart;
+    show($('s4-eyebrow'), t, b-0.3, 0.7, 12);
+    show($('s4-head'), t, b+0.2, 0.8);
+    const cues = [4.6, 8.9, 11.0, 12.0, 13.0];
+    cues.forEach((c,i) => show($('c'+(i+1)), t, b+c, 0.6, 22));
+    show($('s4-bottom'), t, b+14.3, 0.9);
+  }
+
+  /* ----- S5 text ----- */
+  {
+    const b = S.s5.voStart;
+    show($('s5-eyebrow'), t, b-0.3, 0.7, 12);
+    show($('s5-head'), t, b+0.0, 0.8);
+    show($('s5-one'), t, b+1.9, 0.8);
+    show($('s5-onesub'), t, b+2.6, 0.8);
+    show($('s5-strip'), t, b+7.9, 0.9);
+    show($('s5-paper'), t, b+10.9, 0.8);
+  }
+
+  /* ----- S6 ----- */
+  {
+    const b = S.s6.voStart;
+    show($('s6-eyebrow'), t, b-0.3, 0.7, 12);
+    show($('s6-head'), t, b+0.0, 0.8);
+    show($('f1'), t, b+1.6, 0.7, 26);
+    const fp = show($('f2'), t, b+5.4, 0.7, 26);
+    const np = easeOut(prg(t, b+5.4, b+7.2));
+    const v = Math.round(np*np*10000000000/1e7)*1e7;
+    $('f2-num').textContent = '$' + (np>=1 ? '10,000,000,000+' : v.toLocaleString('en-US'));
+    show($('f3'), t, b+9.0, 0.7, 26);
+    show($('f4'), t, b+12.2, 0.7, 26);
+  }
+
+  /* ----- S7 ----- */
+  {
+    const b = S.s7.voStart;
+    show($('s7-eyebrow'), t, b+0.4, 0.8, 12);
+    show($('l1'), t, b+2.2, 0.8, 30);
+    show($('l2'), t, b+5.3, 0.8, 30);
+    show($('l3'), t, b+8.2, 0.8, 30);
+    // final line: lessons dim slightly
+    const fp = easeOut(prg(t, b+10.9, b+11.9));
+    $('s7-lessons').style.opacity = 1 - fp*0.65;
+    show($('s7-final'), t, b+10.9, 1.0, 34);
+    // waves slowly drift
+    const ph = t*9;
+    $('wave1').setAttribute('transform', `translate(${-ph%80},0)`);
+    $('wave2').setAttribute('transform', `translate(${(ph*0.6)%60 - 30},0)`);
+  }
+
+  /* ----- end card ----- */
+  {
+    const ecStart = S.s7.voEnd + 0.5;
+    const p = easeInOut(prg(t, ecStart, ecStart+1.2));
+    $('endcard').style.opacity = p;
+    // fade to black at the very end
+    $('fade').style.opacity = prg(t, TOTAL-1.1, TOTAL-0.15);
+  }
+};
+
+/* readiness: fonts loaded */
+document.fonts.ready.then(() => {
+  // force-load all faces used
+  return Promise.all([
+    document.fonts.load('800 200px Poppins'), document.fonts.load('700 60px Poppins'),
+    document.fonts.load('600 56px Poppins'), document.fonts.load('400 30px Inter'),
+    document.fonts.load('500 24px "IBM Plex Mono"'), document.fonts.load('400 24px "IBM Plex Mono"'),
+  ]);
+}).then(() => { window.seek(0); window.READY = true; });
+</script>
+</body>
+</html>

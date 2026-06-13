@@ -1,0 +1,10 @@
+.DS_Store
+**/.DS_Store
+
+**/node_modules/
+
+video-studio/out/
+video/build/*.wav
+video/build/vo/
+
+*.mp4

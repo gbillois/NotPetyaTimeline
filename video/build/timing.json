@@ -1,0 +1,41 @@
+{
+  "scenes": [
+    {
+      "id": "s1",
+      "voStart": 0.8,
+      "voEnd": 14.288
+    },
+    {
+      "id": "s2",
+      "voStart": 14.838,
+      "voEnd": 29.766
+    },
+    {
+      "id": "s3",
+      "voStart": 30.316,
+      "voEnd": 48.58
+    },
+    {
+      "id": "s4",
+      "voStart": 49.13,
+      "voEnd": 66.386
+    },
+    {
+      "id": "s5",
+      "voStart": 66.936,
+      "voEnd": 79.92
+    },
+    {
+      "id": "s6",
+      "voStart": 80.47,
+      "voEnd": 98.086
+    },
+    {
+      "id": "s7",
+      "voStart": 98.636,
+      "voEnd": 111.884
+    }
+  ],
+  "total": 116.684,
+  "fps": 24
+}
