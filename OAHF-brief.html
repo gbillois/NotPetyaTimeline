@@ -986,8 +986,11 @@ const App = () => {
           <span className="b-figure" style={{ fontSize: 15, color: chrome, letterSpacing: 0 }}>
             {String(i).padStart(2, '0')}<span style={{ opacity: .5 }}> / {String(last).padStart(2, '0')}</span>
           </span>
-          <a href={FULL_RECORD} target="_blank" rel="noreferrer" style={{
+          <a href="oahf-zoom.html" style={{
             pointerEvents: 'auto', marginLeft: 'auto', fontSize: 11.5, color: chrome, textDecoration: 'none',
+          }}>▶ Animated zoom-out</a>
+          <a href={FULL_RECORD} target="_blank" rel="noreferrer" style={{
+            pointerEvents: 'auto', fontSize: 11.5, color: chrome, textDecoration: 'none',
           }}>Full 62-event reconstruction ↗</a>
           <button onClick={() => go(i - 1)} disabled={i === 1} style={{
             pointerEvents: 'auto', color: chromeStrong, opacity: i === 1 ? .3 : 1,

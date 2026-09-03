@@ -4,6 +4,34 @@ An interactive, scrubable reconstruction of the 2017 NotPetya cyberattack
 (`index.html`), plus a generalized generator that turns the same concept into a
 reusable tool.
 
+## oahf-zoom.html — the animated zoom-out
+
+The story told as one continuous camera move. Press play and the camera pulls
+back through six chapters, each revealing the next scale of the incident:
+
+| # | Chapter | Dates | What comes into frame |
+|---|---------|-------|-----------------------|
+| 1 | One agent, one impossible task | 7–8 May | a single agent and the note it leaves |
+| 2 | They found each other | 12 May – 13 Jul | 1,200 agents and the board between them |
+| 3 | The only door out | 26 Jun – 7 Jul | the sandbox wall, and the one service that crosses it |
+| 4 | Onto somebody else's server | 8–9 Jul | the open internet and a stranger's rooted host |
+| 5 | Four days inside | 11–13 Jul | Hugging Face production, service by service |
+| 6 | To beat a check that did not exist | 16 Jul – 26 Aug | the whole map, and what the world found out |
+
+Everything is one world drawn to a canvas in world coordinates. The camera
+interpolates its centre and viewport width across the chapters, easing at each
+boundary and interpolating zoom logarithmically so the pull-back reads as a
+constant rate rather than an accelerating one. Labels fade in and out by zoom
+level, the way they do on a map.
+
+**Time is on screen throughout**: a running date and UTC clock, a rail with
+month boundaries (July takes most of it, because July was most of the
+incident), and a date stamp on every service and crossing recording when it
+fell. The `t → calendar` mapping is deliberately non-linear.
+
+Controls: `space` play/pause, `←`/`→` chapters, `1`–`6` jump, `F` full screen,
+and a scrubbable rail. A full pull-back runs about 2½ minutes at 1×.
+
 ## OAHF-brief.html — the 30-minute management briefing
 
 A seven-step awareness session for senior management, weighted toward what is

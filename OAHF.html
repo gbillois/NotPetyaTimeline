@@ -2265,6 +2265,9 @@ const Hero = ({ t, phase, playing, setPlaying, speed, setSpeed, onReset, onBrief
             <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', color: phase.color === WS.danger ? '#FF9083' : WS.green400, textTransform: 'uppercase' }}>{phase.label}</div>
             <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,.6)' }}>{phase.range}</div>
           </div>
+          <a href="oahf-zoom.html" title="Animated zoom-out"
+            style={{ ...btn, textDecoration: 'none', display: 'inline-block',
+                     background: WS.green400, color: WS.indigo900, border: 'none', fontWeight: 700 }}>▶ THE ZOOM OUT</a>
           <a href="OAHF-brief.html" title="7-step management briefing"
             style={{ ...btn, textDecoration: 'none', display: 'inline-block' }}>7-STEP BRIEFING →</a>
           <button onClick={onBrief} title="What is this?" style={btn}>?</button>
