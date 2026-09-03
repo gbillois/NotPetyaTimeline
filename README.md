@@ -32,6 +32,40 @@ fell. The `t → calendar` mapping is deliberately non-linear.
 Controls: `space` play/pause, `←`/`→` chapters, `1`–`6` jump, `F` full screen,
 and a scrubbable rail. A full pull-back runs about 2½ minutes at 1×.
 
+## OAHFcomic.html — the general-audience version, in comic form
+
+`OAHFcomic.html` retells the same incident for people who do not work in
+security, in **French and English** (toggle in the top bar; the choice is
+remembered, and `?lang=en` forces one).
+
+It is built around a fourteen-panel comic strip. The page carries **one sheet**
+and crops each case out of it in CSS as a cell of a 2 x 7 grid, so the drawing
+stays a single file. Put the sheet at `assets/oahf-comic.png` (see
+`assets/README.md` for the grid layout); if it is missing, the page still
+renders in full, shows a notice, and lets a reader pick the sheet from disk or
+drag it onto the page. `tools/embed-comic.sh` inlines it as a data URI so the
+page ships standalone like its siblings.
+
+Each case is presented twice. On the left, the drawn dialogue, transcribed in
+French and translated in English, set as speech bubbles. On the right, **what
+really happened**: the dates, the UTC timestamps, the figures and the verbatim
+quotations from the same four primary documents that `OAHF.html` is built from,
+with a per-case source line. Where the comic overstates, the fact box says so
+(the agents read Hugging Face, they did not tamper with it: 84 operations
+against the credential store, all 84 denied, no public model altered).
+
+Around the strip:
+
+- **Headline figures** — ~700 agents, 1,200 on the board, 4.5 days, ~17,600
+  actions, 41 production workers, 311 board repositories, 956 secrets read at
+  OpenAI, 0 public models altered.
+- **The pivot**, dropped in after case 7 — they had already broken the benchmark
+  by reading the paper, and ruled the shortcut out for fear of a scorer that did
+  not exist. Everything after that was to defeat an imaginary check.
+- **Chronology** — 22 dated entries with UTC timestamps, from the first write
+  into the shared cache on 20 April 2026 to the 26 August reports.
+- **Six takeaways**, none of which depend on this being AI.
+
 ## OAHF-brief.html — the 30-minute management briefing
 
 A seven-step awareness session for senior management, weighted toward what is
