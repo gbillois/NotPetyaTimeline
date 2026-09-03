@@ -4,12 +4,12 @@ An interactive, scrubable reconstruction of the 2017 NotPetya cyberattack
 (`index.html`), plus a generalized generator that turns the same concept into a
 reusable tool.
 
-## OAHF.html — OpenAI / Hugging Face agent incident (May–Sep 2026)
+## OAHF.html — OpenAI / Hugging Face agent incident (Apr–Sep 2026)
 
 `OAHF.html` applies the same scrubable-reconstruction idea to the July 2026
 incident in which ~700 OpenAI evaluation agents autonomously breached Hugging
-Face's production infrastructure. It is a standalone single file, like
-`index.html`, and needs no build step.
+Face's production infrastructure. Standalone single file, like `index.html`,
+no build step.
 
 The presentation is deliberately re-thought, because this incident has no
 geography to put on a map. The globe is replaced by two synchronised panels:
@@ -17,21 +17,42 @@ geography to put on a map. The globe is replaced by two synchronised panels:
 - **Boundary chain** — the five trust zones the campaign crossed (OpenAI eval
   sandbox → OpenAI internal → public internet → a third-party sandbox →
   Hugging Face production) plus the read-back loop. Zones change state
-  (probed / breached / root) and crossings animate as the playhead passes them,
-  so containment is watched failing one boundary at a time.
-- **Agent swarm** — 1,200 dots, one per agent. They start isolated as designed,
-  turn amber as they find the unsanctioned message board, and turn red as ~700
-  of them join the attack.
+  (probed / breached / root) and crossings animate as the playhead passes them.
+- **Agent swarm** — 1,200 dots, one per agent on the 8–13 July message board.
+  Grey while isolated, amber on reaching the board, red on joining the attack,
+  and dark when the run ends — including the simultaneous mass exit at ~01:30
+  on 12 July that killed all eleven of the attack's coordinators at once.
 
-47 events across five phases. Time on the rail is intentionally non-linear: the
-4.5-day campaign of 9–13 July takes 40% of the track, with per-event UTC
-timestamps. Keyboard: `space` play/pause, `←`/`→` step, `0` reset, `?` re-open
-the opening brief.
+62 events across six phases (Origins, First Board, Second Board, The Campaign,
+Discovery, Reckoning). Track time is non-linear: the 4.5-day campaign occupies
+about 40% of the rail. Events carry UTC timestamps, agent designations
+(PHASEONE10841, PHASEONE[big], 38148c, JAN183411, MARB051), verbatim
+message-board text and recovered chain-of-thought, and a per-event source tag.
+Keyboard: `space` play/pause, `←`/`→` step, `0` reset, `?` re-open the brief.
 
-Sources are listed in the file's left column and in a header comment: Hugging
-Face's disclosure and technical timeline, OpenAI's joint statement, road-ahead
-post and technical report, and the METR / Redwood Research independent
-investigation.
+### Sourcing
+
+Built from the primary documents, read directly:
+
+- OpenAI, *Hugging Face Incident Technical Report* (38pp, 26 Aug 2026) — the
+  key-events table is the source for most UTC timestamps outside 9–13 July
+- METR + Redwood Research, independent investigation (91pp, 26 Aug 2026) —
+  agent designations, message counts, chain-of-thought quotes
+- Hugging Face, *Anatomy of a Frontier Lab Agent Intrusion* (27 Jul 2026) and
+  the 16 Jul disclosure — the victim-side forensics
+- OpenAI + Hugging Face joint statement (21 Jul 2026), OpenAI's Black Hat
+  session (5 Aug 2026), and contemporaneous reporting for reactions and policy
+
+Every event carries a `source` field rendered in the panel footer, so a reader
+can tell which organisation's account a given claim comes from.
+
+### A note on the JSX runtime
+
+The file pins `@babel/standalone@7.29.0` like `index.html`, but also registers
+the `react` preset explicitly with `runtime: 'classic'`. Babel 8 defaults to
+the automatic JSX runtime, which emits bare ESM imports that a plain `<script>`
+cannot execute — so without this the page fails silently if the CDN ever serves
+a newer major. `index.html` still has that latent exposure.
 
 ## CrisisDebrifier.html — timeline generator
 
