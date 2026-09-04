@@ -4,7 +4,7 @@ An interactive, scrubable reconstruction of the 2017 NotPetya cyberattack
 (`index.html`), plus a generalized generator that turns the same concept into a
 reusable tool.
 
-## oahf-zoom.html — the animated zoom-out
+## oaf-zoom.html — the animated zoom-out
 
 The story told as one continuous camera move. Press play and the camera pulls
 back through six chapters, each revealing the next scale of the incident:
