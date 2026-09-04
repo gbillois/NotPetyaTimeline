@@ -1508,6 +1508,16 @@ const remap = (v) => {
   return 1;
 };
 
+// 25 of the 62. Per chapter: 2 · 3 · 3 · 5 · 6 · 6.
+const KEY_EVENTS = new Set([
+  'e04', 'e05',                                  // 1 · the impossible task, the exam with no answers
+  'e06', 'e07', 'e10',                           // 2 · the note, the answer, the warning nobody could act on
+  'e11', 'e12', 'e15',                           // 3 · administrator, the alert that was closed, the rebuild
+  'e20', 'e21', 'e23', 'e25', 'e29',             // 4 · the board, the delight, the imaginary grader, the launchpad
+  'e30', 'e32', 'e34', 'e36', 'e40', 'e41',      // 5 · the breakthrough, the swarm, the veto, RCE, root, the exit
+  'e49', 'e50', 'e52', 'e53', 'e60', 'e62',      // 6 · disclosure, the customer call, attribution, root cause
+]);
+
 const ZONE_AT = {
   eval:      [0, 0],
   internal:  [595, 0],
@@ -1527,9 +1537,11 @@ const EVENTS = window.OAHF_EVENTS.map((e, i) => {
   });
 }).sort((a, b) => a.zt - b.zt);
 
-const eventAt = (t) => {
+const KEY_LIST = EVENTS.filter(e => KEY_EVENTS.has(e.id));
+
+const eventAt = (t, list) => {
   let cur = null;
-  for (const e of EVENTS) { if (e.zt <= t + 0.0005) cur = e; else break; }
+  for (const e of list) { if (e.zt <= t + 0.0005) cur = e; else break; }
   return cur;
 };
 
@@ -1835,7 +1847,7 @@ const drawScene = (ctx, W, H, t, clock) => {
   ctx.globalAlpha = 1;
 
   // ── the record itself, pinned where each event happened
-  for (const e of EVENTS) {
+  for (const e of (window.OAHF_LIST || EVENTS)) {
     if (t < e.zt) continue;
     const age = t - e.zt;
     const sx = X(e.ex), sy = Y(e.ey);
@@ -1901,11 +1913,14 @@ const Stage = () => {
   const [t, setT] = useState(0);
   const [playing, setPlayingS] = useState(false);
   const [speed, setSpeedS] = useState(1);
+  const [full, setFull] = useState(false);
+  const list = full ? EVENTS : KEY_LIST;
+  window.OAHF_LIST = list;
 
   const setPlaying = (v) => { playRef.current = typeof v === 'function' ? v(playRef.current) : v; setPlayingS(playRef.current); };
   const setT2 = (v) => { tRef.current = clamp(v, 0, 1); setT(tRef.current); };
 
-  const DURATION = 230; // seconds for a full pull-back at 1×, with 62 events to read
+  const DURATION = 115; // seconds for the cinematic cut at 1×
 
   useEffect(() => {
     const cv = canvasRef.current;
@@ -1942,8 +1957,8 @@ const Stage = () => {
     const onKey = (e) => {
       if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
       if (e.code === 'Space') { e.preventDefault(); setPlaying(p => !p); }
-      else if (e.code === 'ArrowRight') { e.preventDefault(); const n = EVENTS.find(x => x.zt > tRef.current + 0.0006); setT2(n ? n.zt + 0.0004 : 1); setPlaying(false); }
-      else if (e.code === 'ArrowLeft') { e.preventDefault(); const rev = [...EVENTS].reverse(); const n = rev.find(x => x.zt < tRef.current - 0.0012); setT2(n ? n.zt + 0.0004 : 0); setPlaying(false); }
+      else if (e.code === 'ArrowRight') { e.preventDefault(); const n = (window.OAHF_LIST || EVENTS).find(x => x.zt > tRef.current + 0.0006); setT2(n ? n.zt + 0.0004 : 1); setPlaying(false); }
+      else if (e.code === 'ArrowLeft') { e.preventDefault(); const rev = [...(window.OAHF_LIST || EVENTS)].reverse(); const n = rev.find(x => x.zt < tRef.current - 0.0012); setT2(n ? n.zt + 0.0004 : 0); setPlaying(false); }
       else if (e.key === '0' || e.code === 'Home') { setT2(0); setPlaying(false); }
       else if (e.key >= '1' && e.key <= '6') { setT2(CHAPTERS[Number(e.key) - 1].t0 + 0.001); setPlaying(false); }
       else if (e.key === 'f' || e.key === 'F') {
@@ -1956,7 +1971,7 @@ const Stage = () => {
   }, []);
 
   const ch = CHAPTERS.find(c => t >= c.t0 && t < c.t1) || CHAPTERS[CHAPTERS.length - 1];
-  const ev = eventAt(t);
+  const ev = eventAt(t, list);
   const started = t > 0.0005 || playing;
 
   const railRef = useRef(null);
@@ -1981,7 +1996,7 @@ const Stage = () => {
           alignItems: 'center', justifyContent: 'center', textAlign: 'center',
           padding: 32, background: 'rgba(14,6,38,.62)', animation: 's-fade .5s both',
         }}>
-          <span className="s-eyebrow">62 events · one continuous pull-back · July 2026</span>
+          <span className="s-eyebrow">25 beats · one continuous pull-back · July 2026</span>
           <h1 style={{
             fontFamily: "'Poppins', sans-serif", fontWeight: 800, letterSpacing: '-.04em',
             fontSize: 'clamp(34px, 5vw, 76px)', lineHeight: 1, margin: '18px 0 14px', maxWidth: '16ch',
@@ -1994,7 +2009,7 @@ const Stage = () => {
             fontSize: 14, fontWeight: 800, letterSpacing: '.14em',
           }}>▶  PLAY</button>
           <div style={{ fontSize: 12, color: 'rgba(255,255,255,.45)', marginTop: 22 }}>
-            space to pause · ← → step through the record · 1–6 jump chapters · F full screen
+            space to pause · ← → step · 1–6 chapters · F full screen · switch to all 62 events any time
           </div>
         </div>
       )}
@@ -2047,7 +2062,7 @@ const Stage = () => {
 
             <div className="s-cap-3" style={{ display: 'flex', gap: 14, marginTop: 16, alignItems: 'center' }}>
               <span style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '.14em', color: 'rgba(255,255,255,.38)' }}>
-                EVENT {ev.i + 1} / {EVENTS.length}
+                {list.indexOf(ev) + 1} / {list.length}
               </span>
               {ev.source && SOURCE_LABEL[ev.source] && (
                 <span style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '.14em', color: 'rgba(255,255,255,.38)' }}>
@@ -2114,6 +2129,11 @@ const Stage = () => {
           </button>
           <button className="s-btn" onClick={() => { setT2(0); setPlaying(false); }}>↺</button>
           <button className="s-btn" onClick={() => setSpeedS(s => { const n = s === 1 ? 2 : s === 2 ? 4 : s === 4 ? 0.5 : 1; speedRef.current = n; return n; })}>{speed}×</button>
+          <button className="s-btn" onClick={() => setFull(f => !f)}
+            title={full ? 'Play only the essential beats' : 'Play all 62 events from the reconstruction'}
+            style={full ? { background: 'rgba(4,240,106,.18)', borderColor: C.green, color: C.green } : {}}>
+            {full ? 'FULL · 62' : 'ESSENTIALS · 25'}
+          </button>
 
           <div ref={railRef} onMouseDown={(e) => { scrub(e); const mv = (ev) => scrub(ev); const up = () => { window.removeEventListener('mousemove', mv); window.removeEventListener('mouseup', up); }; window.addEventListener('mousemove', mv); window.addEventListener('mouseup', up); }}
             style={{ flex: 1, minWidth: 220, height: 46, position: 'relative', cursor: 'ew-resize' }}>

@@ -29,8 +29,14 @@ month boundaries (July takes most of it, because July was most of the
 incident), and a date stamp on every service and crossing recording when it
 fell. The `t → calendar` mapping is deliberately non-linear.
 
-Controls: `space` play/pause, `←`/`→` chapters, `1`–`6` jump, `F` full screen,
-and a scrubbable rail. A full pull-back runs about 2½ minutes at 1×.
+It plays a **cinematic cut of 25 beats** drawn from the 62-event
+reconstruction — 2 in the opening chapter, 3, 3, 5, 6 and 6 after it, so the
+setup does not drag. One button switches to all 62 for anyone who wants the
+whole record; the pins on the map follow whichever cut is playing.
+
+Controls: `space` play/pause, `←`/`→` step, `1`–`6` jump chapters, `F` full
+screen, and a scrubbable rail. A full pull-back runs about 2 minutes at 1×,
+with 0.5× available for reading along and 2×/4× for skimming.
 
 ## OAHF-comic.html — the general-audience version, in comic form
 
