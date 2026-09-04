@@ -39,12 +39,12 @@ security, in **French and English** (toggle in the top bar; the choice is
 remembered, and `?lang=en` forces one).
 
 It is built around a fourteen-panel comic strip. The page carries **one sheet**
-and crops each case out of it in CSS as a cell of a 2 x 7 grid, so the drawing
-stays a single file. Put the sheet at `assets/oahf-comic.png` (see
-`assets/README.md` for the grid layout); if it is missing, the page still
-renders in full, shows a notice, and lets a reader pick the sheet from disk or
-drag it onto the page. `tools/embed-comic.sh` inlines it as a data URI so the
-page ships standalone like its siblings.
+(`assets/oahf-comic.jpg`, committed) and crops each case out of it in CSS. The
+sheet's seven rows are not equal heights, so the crop uses a measured rectangle
+per case rather than an even grid — see `assets/README.md`. If the file is ever
+missing the page still renders in full, shows a notice, and lets a reader pick
+the sheet from disk or drag it onto the page. `tools/embed-comic.sh` inlines it
+as a data URI so the page ships standalone like its siblings.
 
 Each case is presented twice. On the left, the drawn dialogue, transcribed in
 French and translated in English, set as speech bubbles. On the right, **what

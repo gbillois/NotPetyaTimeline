@@ -1,12 +1,12 @@
 # assets/
 
-## `oahf-comic.png` — the comic sheet for `OAHFcomic.html`
+## `oahf-comic.jpg` — the comic sheet for `OAHFcomic.html`
 
-`OAHFcomic.html` does not carry fourteen separate images. It carries one sheet
-and crops each case out of it in CSS, so the drawing stays a single file and the
-page keeps its own layout.
+`OAHFcomic.html` does not carry fourteen separate images. It carries this one
+sheet and crops each case out of it in CSS, so the drawing stays a single file
+and the page keeps its own layout.
 
-The sheet must be a regular **2-column by 7-row grid**, numbered left to right,
+The sheet is 750 x 1125, two columns by seven rows, numbered left to right and
 top to bottom:
 
 ```
@@ -19,19 +19,31 @@ top to bottom:
 13 14
 ```
 
-Any resolution works. The page measures the image once it loads and derives the
-per-case aspect ratio from it, so a 750 x 1100 sheet and a 3000 x 4400 sheet
-both render correctly. Gutters between the cases are part of the crop and read
-as the frame.
+**The rows are not equal heights**, which is why the page does not crop on an
+even grid. Measured from the drawing:
 
-The file is not committed here, because it is a drawing rather than source. Drop
-your copy at `assets/oahf-comic.png` and the page picks it up. If the file is
-missing, the page still renders in full, shows a notice, and lets a reader pick
-the sheet from disk (or drag it onto the page) to see it immediately.
+| row | y | height |   | column | x | width |
+|-----|---|--------|---|--------|---|-------|
+| 1 | 5 | 205 | | 1 | 6 | 364 |
+| 2 | 215 | 181 | | 2 | 377 | 368 |
+| 3 | 401 | 156 |
+| 4 | 562 | 157 |
+| 5 | 724 | 161 |
+| 6 | 889 | 136 |
+| 7 | 1029 | 94 |
+
+Those rectangles live in `PANEL_RECTS` in `OAHFcomic.html` and are converted to
+percentages, so re-exporting the same layout at any resolution still crops
+correctly. Replacing the sheet with a differently proportioned one means
+re-measuring `PANEL_RECTS`.
+
+If the file is missing, the page still renders in full, shows a notice, and lets
+a reader pick the sheet from disk (or drag it onto the page) to see it
+immediately.
 
 To ship the page as one standalone file, inline the sheet:
 
 ```sh
-tools/embed-comic.sh                       # assets/oahf-comic.png -> OAHFcomic.html
+tools/embed-comic.sh                       # assets/oahf-comic.jpg -> OAHFcomic.html
 tools/embed-comic.sh my-sheet.png page.html
 ```

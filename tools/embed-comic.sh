@@ -2,13 +2,13 @@
 # Inline the comic sheet into OAHFcomic.html as a data: URI, so the page ships
 # as a single self-contained file like index.html and OAHF.html do.
 #
-#   tools/embed-comic.sh [sheet.png] [page.html]
+#   tools/embed-comic.sh [sheet] [page.html]
 #
-# Defaults: assets/oahf-comic.png -> OAHFcomic.html, edited in place.
+# Defaults: assets/oahf-comic.jpg -> OAHFcomic.html, edited in place.
 # Re-running it is safe: the applySheet(...) call is rewritten each time.
 set -euo pipefail
 
-SHEET="${1:-assets/oahf-comic.png}"
+SHEET="${1:-assets/oahf-comic.jpg}"
 PAGE="${2:-OAHFcomic.html}"
 
 [ -f "$SHEET" ] || { echo "sheet not found: $SHEET" >&2; exit 1; }

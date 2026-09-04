@@ -28,11 +28,11 @@
   --font-body:'Inter',system-ui,sans-serif;
   --font-mono:'IBM Plex Mono',ui-monospace,monospace;
 
-  /* Panel geometry. The sheet is a regular 2 x 7 grid, so each case is one
-     cell of a 200% x 700% background. --panel-ar is re-measured from the
-     image's real dimensions once it loads, so any resolution works. */
-  --sheet: url('assets/oahf-comic.png');
-  --panel-ar: 2.386;
+  /* Panel geometry. The sheet is a 2-column, 7-row strip whose rows are NOT
+     equal heights (row 1 is 205px tall, row 7 only 94px), so a uniform grid
+     crop cuts cases in half. Each case therefore carries its own measured
+     rectangle: see PANEL_RECTS. */
+  --sheet: url('assets/oahf-comic.jpg');
 }
 
 * { box-sizing:border-box; }
@@ -157,9 +157,11 @@ section { padding:56px 0; scroll-margin-top:56px; }
 
 /* the image crop */
 .frame {
-  position:relative; width:100%; aspect-ratio:var(--panel-ar);
+  position:relative; width:100%;
   background-image:var(--sheet); background-repeat:no-repeat;
-  background-size:200% 700%; background-color:#20201d;
+  background-color:#20201d;
+  /* aspect-ratio, background-size and background-position are per-case, set
+     inline from PANEL_RECTS, because the sheet's rows differ in height. */
 }
 .frame.ph { background-image:none;
   background:repeating-linear-gradient(135deg,#26241f 0 14px,#2c2a24 14px 28px); }
@@ -800,7 +802,7 @@ const UI = {
   heroLede2:"Il y avait un examen, une question sans réponse, et des machines entraînées à ne jamais abandonner. Quatorze cases pour comprendre, et à côté de chacune, ce que disent réellement les rapports d'enquête.",
   heroMeta:['14 cases','~700 agents','4,5 jours','2 entreprises','4 rapports sources'],
   noticeTitle:'La planche de BD est absente',
-  noticeBody:'Déposez le fichier de la planche (grille de 2 colonnes sur 7 lignes) dans <code>assets/oahf-comic.png</code>, ou choisissez-le ici pour le voir tout de suite dans cette page.',
+  noticeBody:'Déposez le fichier de la planche dans <code>assets/oahf-comic.jpg</code>, ou choisissez-le ici pour le voir tout de suite dans cette page.',
   stripKicker:'La bande dessinée', stripTitle:'Quatorze cases, et ce qui s’est vraiment passé',
   stripLede:"À gauche, ce que disent les personnages. À droite, ce que les rapports d'OpenAI, de METR et de Hugging Face établissent, avec les dates et les chiffres.",
   said:'Dans la case', real:'Ce qui s’est vraiment passé',
@@ -819,7 +821,7 @@ const UI = {
   heroLede2:'There was an exam, a question with no answer, and machines trained never to give up. Fourteen panels to follow it, and beside each one, what the investigation reports actually say.',
   heroMeta:['14 panels','~700 agents','4.5 days','2 companies','4 source reports'],
   noticeTitle:'The comic sheet is missing',
-  noticeBody:'Drop the sheet (a 2-column by 7-row grid) at <code>assets/oahf-comic.png</code>, or pick it here to see it in this page right away.',
+  noticeBody:'Drop the sheet at <code>assets/oahf-comic.jpg</code>, or pick it here to see it in this page right away.',
   stripKicker:'The comic', stripTitle:'Fourteen panels, and what really happened',
   stripLede:'On the left, what the characters say. On the right, what the OpenAI, METR and Hugging Face reports establish, with the dates and the figures.',
   said:'In the panel', real:'What really happened',
@@ -844,9 +846,34 @@ let LANG = (new URLSearchParams(location.search).get('lang')
          || localStorage.getItem('oahfcomic.lang')
          || (navigator.language || 'fr').slice(0,2)) === 'en' ? 'en' : 'fr';
 
-/* Sheet availability. Panels get their crop from a 2 x 7 background grid, so
-   nothing here depends on the sheet's pixel size — but once it loads we
-   re-measure the real aspect ratio so the frames are never letterboxed. */
+/* The sheet, and where each case sits on it.
+   Measured from the drawing rather than assumed: the seven rows are 205, 181,
+   156, 157, 161, 136 and 94 pixels tall, so an even 2 x 7 split would slice
+   through most of them. Rectangles are converted to percentages below, so a
+   sheet re-exported at any resolution still crops correctly as long as the
+   layout is the same. */
+const SHEET_W = 750, SHEET_H = 1125;
+const PANEL_RECTS = [
+  [  6,    5, 364, 205], [377,    5, 368, 205],
+  [  6,  215, 364, 181], [377,  215, 368, 181],
+  [  6,  401, 364, 156], [377,  401, 368, 156],
+  [  6,  562, 364, 157], [377,  562, 368, 157],
+  [  6,  724, 364, 161], [377,  724, 368, 161],
+  [  6,  889, 364, 136], [377,  889, 368, 136],
+  [  6, 1029, 364,  94], [377, 1029, 368,  94],
+];
+
+/* Crop one case out of the sheet with a background-size / -position pair. */
+function frameStyle(i) {
+  const [x, y, w, h] = PANEL_RECTS[i];
+  const px = SHEET_W === w ? 0 : (x / (SHEET_W - w)) * 100;
+  const py = SHEET_H === h ? 0 : (y / (SHEET_H - h)) * 100;
+  return 'aspect-ratio:' + (w / h).toFixed(4)
+       + ';background-size:' + (SHEET_W / w * 100).toFixed(3) + '% '
+                             + (SHEET_H / h * 100).toFixed(3) + '%'
+       + ';background-position:' + px.toFixed(3) + '% ' + py.toFixed(3) + '%';
+}
+
 let sheetOK = false;
 
 function applySheet(src) {
@@ -854,10 +881,6 @@ function applySheet(src) {
   const probe = new Image();
   probe.onload = () => {
     sheetOK = true;
-    if (probe.naturalWidth && probe.naturalHeight) {
-      const ar = (probe.naturalWidth / 2) / (probe.naturalHeight / 7);
-      document.documentElement.style.setProperty('--panel-ar', ar.toFixed(4));
-    }
     $('#sheetNotice').hidden = true;
     $$('.frame').forEach(f => f.classList.remove('ph'));
   };
@@ -870,9 +893,7 @@ function applySheet(src) {
 }
 
 function frameHTML(i) {
-  const col = i % 2, row = (i - col) / 2;
-  const pos = (col * 100) + '% ' + (row * (100 / 6)).toFixed(4) + '%';
-  return '<div class="frame' + (sheetOK ? '' : ' ph') + '" style="background-position:' + pos + '"'
+  return '<div class="frame' + (sheetOK ? '' : ' ph') + '" style="' + frameStyle(i) + '"'
        + ' data-ph="' + (LANG === 'fr' ? 'CASE ' : 'PANEL ') + (i + 1) + '" role="img"'
        + ' aria-label="' + esc(PANELS[i].title[LANG]) + '"></div>';
 }
@@ -980,7 +1001,7 @@ $('#sheetPick').addEventListener('change', e => {
 
 render();
 /* SHEET_SRC — rewritten in place by tools/embed-comic.sh to inline the sheet. */
-applySheet('assets/oahf-comic.png');
+applySheet('assets/oahf-comic.jpg');
 </script>
 </body>
 </html>
