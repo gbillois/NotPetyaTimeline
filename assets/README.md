@@ -1,8 +1,8 @@
 # assets/
 
-## `oahf-comic.jpg` — the comic sheet for `OAHFcomic.html`
+## `oahf-comic.jpg` — the comic sheet for `OAHF-comic.html`
 
-`OAHFcomic.html` does not carry fourteen separate images. It carries this one
+`OAHF-comic.html` does not carry fourteen separate images. It carries this one
 sheet and crops each case out of it in CSS, so the drawing stays a single file
 and the page keeps its own layout.
 
@@ -32,7 +32,7 @@ even grid. Measured from the drawing:
 | 6 | 889 | 136 |
 | 7 | 1029 | 94 |
 
-Those rectangles live in `PANEL_RECTS` in `OAHFcomic.html` and are converted to
+Those rectangles live in `PANEL_RECTS` in `OAHF-comic.html` and are converted to
 percentages, so re-exporting the same layout at any resolution still crops
 correctly. Replacing the sheet with a differently proportioned one means
 re-measuring `PANEL_RECTS`.
@@ -44,6 +44,6 @@ immediately.
 To ship the page as one standalone file, inline the sheet:
 
 ```sh
-tools/embed-comic.sh                       # assets/oahf-comic.jpg -> OAHFcomic.html
+tools/embed-comic.sh                       # assets/oahf-comic.jpg -> OAHF-comic.html
 tools/embed-comic.sh my-sheet.png page.html
 ```

@@ -4,7 +4,7 @@ An interactive, scrubable reconstruction of the 2017 NotPetya cyberattack
 (`index.html`), plus a generalized generator that turns the same concept into a
 reusable tool.
 
-## oaf-zoom.html — the animated zoom-out
+## OAHF-zoom.html — the animated zoom-out
 
 The story told as one continuous camera move. Press play and the camera pulls
 back through six chapters, each revealing the next scale of the incident:
@@ -32,9 +32,9 @@ fell. The `t → calendar` mapping is deliberately non-linear.
 Controls: `space` play/pause, `←`/`→` chapters, `1`–`6` jump, `F` full screen,
 and a scrubbable rail. A full pull-back runs about 2½ minutes at 1×.
 
-## OAHFcomic.html — the general-audience version, in comic form
+## OAHF-comic.html — the general-audience version, in comic form
 
-`OAHFcomic.html` retells the same incident for people who do not work in
+`OAHF-comic.html` retells the same incident for people who do not work in
 security, in **French and English** (toggle in the top bar; the choice is
 remembered, and `?lang=en` forces one).
 
